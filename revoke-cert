@@ -80,20 +80,28 @@ if [ "${SURE}" != "y" -a "${SURE}" != "Y" ]; then
     exit 1
 fi
 
+echo
+echo -e -n "$INPUT Enter passphase for signing CA key: "
+read -s PASS
+echo
+export CA_PASS=${PASS}
+
 echo -e "$NOTE Revoke the certificate"
 
 # Revoke the certificate
 openssl ca \
            -config conf/ca.conf \
            -revoke ${CERT_PATH} \
-           -crl_reason ${REASON}
+           -crl_reason ${REASON} \
+           -passin env:CA_PASS
 
 echo -e "$NOTE Regenerate the CRL"
 
 # Regenerate the CRL
 openssl ca -gencrl \
            -config conf/ca.conf \
-           -out crl/ca.crl
+           -out crl/ca.crl \
+           -passin env:CA_PASS
 
 popd > /dev/null
 

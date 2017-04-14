@@ -1,0 +1,67 @@
+# travis
+
+language: generic
+sudo: false
+dist: trusty
+
+before_install:
+  - bash --version
+  - openssl version
+
+script:
+  - |
+      ./create-root-ca -d travis-ca <<EOF
+
+
+
+
+
+
+
+
+      password_1
+      password_1
+      EOF
+  - cd travis-ca/
+  - |
+      ./bin/create-signing-ca -d travis-signing << EOF
+
+
+
+
+
+
+
+
+      password_2
+      password_2
+      password_1
+      EOF
+  - cd travis-signing/
+  - |
+      ./bin/create-server -s travis-server -a 0.0.0.0 -a 1.1.1.1 << EOF
+      password_2
+
+
+
+
+
+
+
+      EOF
+  - |
+      ./bin/create-client -c travis-client << EOF
+      password_2
+
+
+
+
+
+
+      EOF
+  - |
+      ./bin/revoke-cert -c certs/travis-server.server.crt << EOF
+      1
+      y
+      password_2
+      EOF
