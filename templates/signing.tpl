@@ -4,7 +4,7 @@ domain                  = {{CA_DOMAIN}}
 base_url                = http://$domain/ca        # CA base URL
 aia_url                 = $base_url/$ca.crt        # CA certificate URL
 crl_url                 = $base_url/$ca.crl        # CRL distribution point
-name_opt                = multiline,-esc_msb,utf8 # Display UTF-8 characters
+name_opt                = multiline,-esc_msb,utf8  # Display UTF-8 characters
 
 # CA certificate request
 # Configuration for `openssl req ...`
@@ -59,12 +59,12 @@ default_crl_days        = 1                     # How long before next CRL
 crl_extensions          = crl_ext               # CRL extensions
 
 [ match_pol ]
-countryName             = match
-stateOrProvinceName     = optional
-localityName            = optional
-organizationName        = match
-organizationalUnitName  = optional
-commonName              = supplied
+countryName             = match                 # Must match
+stateOrProvinceName     = optional              # Included if present
+localityName            = optional              # Included if present
+organizationName        = match                 # Must match
+organizationalUnitName  = optional              # Included if present
+commonName              = supplied              # Must be present
 
 [ extern_pol ]
 countryName             = supplied              # Must be present

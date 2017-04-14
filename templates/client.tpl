@@ -31,4 +31,4 @@ commonName_default              = {{CA_USERNAME}}
 keyUsage                = critical,digitalSignature
 extendedKeyUsage        = clientAuth
 subjectKeyIdentifier    = hash
-#subjectAltName          = email:move
+#subjectAltName         = email:move
