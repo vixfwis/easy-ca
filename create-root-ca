@@ -1,6 +1,14 @@
 #!/bin/bash
 # Derek Moore <derek.moore@gmail.com>
 
+set -eu
+
+umask 0077
+
+BIN_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+source "${BIN_DIR}"/functions
+source "${BIN_DIR}"/defaults.conf
+
 usage() {
     echo "Usage: $0 -d CA_DIR"
     echo "Initializes a new root CA in CA_DIR"
@@ -16,51 +24,52 @@ CA_DIR=
 while getopts d: FLAG; do
     case $FLAG in
         d) CA_DIR=${OPTARG} ;;
-        *) usage ;;
+        *) echo -e -n "$ERR " && usage ;;
     esac
 done
 
 if [ "${CA_DIR}" == "" ]; then
-    usage
+    echo -e -n "$SUCC " && usage
 fi
 
-BIN_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-source ${BIN_DIR}/functions
-[[ -f "${BIN_DIR}/defaults.conf" ]] && source ${BIN_DIR}/defaults.conf
-
+RND_FILE=${HOME}/.rnd
 HOME=$CA_DIR
 CA_NAME=$( basename "${HOME}" )
 
-echo
-echo "Creating root CA in '${HOME}'"
-echo
+echo -e "$NOTE Creating root CA in dir '${HOME}'"
 
-init_ca_home ${HOME}
-generate_conf ${HOME}/bin/defaults.conf
+init_ca_home "${HOME}"
+generate_conf "${HOME}"/bin/defaults.conf
 source ${HOME}/bin/defaults.conf
 
 echo
-echo -n "Enter passphase for encrypting root CA key: "
+echo -e -n "$INPUT Enter passphase for encrypting root CA key: "
 read -s PASS1
 echo
-echo -n "Verifying - Enter passphase for encrypting root CA key: "
+echo -e -n "$INPUT Verifying - Enter passphase for encrypting root CA key: "
 read -s PASS2
 echo
 
 if [ "${PASS1}" != "${PASS2}" ]; then
-    echo "Passphrases did not match, exiting."
+    echo "$ERR Passphrases did not match, exiting."
     exit 1
 fi
 export CA_PASS=${PASS1}
+
+export RANDFILE=$RND_FILE
 
 pushd ${HOME} > /dev/null
 
 # Generate the root CA openssl config
 template "${BIN_DIR}/templates/root.tpl" "conf/ca.conf"
 
-# Create the root CA csr
-openssl genrsa -out ca/private/ca.key -passout env:CA_PASS 4096
+echo -e "$NOTE Creating the root CA key"
+
+# Create the root CA key
+openssl genrsa -out ca/private/ca.key -aes256 -passout env:CA_PASS 4096
 chmod 0400 ca/private/ca.key
+
+echo -e "$NOTE Creating the root CA csr"
 
 # Create the root CA csr
 openssl req -new -batch \
@@ -68,6 +77,8 @@ openssl req -new -batch \
             -key ca/private/ca.key \
             -out ca/ca.csr \
             -passin env:CA_PASS
+
+echo -e "$NOTE Creating the root CA certificate"
 
 # Create the root CA certificate
 openssl ca -selfsign -batch -notext \
@@ -78,20 +89,27 @@ openssl ca -selfsign -batch -notext \
            -extensions root_ca_ext \
            -passin env:CA_PASS
 
+echo -e "$NOTE Creating the root CA CRL"
+
 # Create the root CRL
 openssl ca -gencrl -batch \
            -config conf/ca.conf \
-           -out crl/ca.crl
+           -out crl/ca.crl \
+           -passin env:CA_PASS
+
+echo -e "$NOTE Copying toolchain"
 
 # Replicate the existing binary directory
 for BIN in ${BINARIES}; do
-    cp ${BIN_DIR}/${BIN} bin/
+    ln -s ${BIN_DIR}/${BIN} bin/
 done
-cp -r ${BIN_DIR}/templates bin/
+mkdir bin/templates/
+for TPL in ${TEMPLATES}; do
+    ln -s ${BIN_DIR}/templates/${TPL} bin/templates/
+done
 
 popd > /dev/null
 
-echo
-echo "Root CA initialized."
-echo
+unset CA_PASS
 
+echo -e "$SUCC Root CA initialized."

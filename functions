@@ -1,9 +1,10 @@
 #!/bin/bash
 # Derek Moore <derek@ripple.com>
 
+set -eu
+
 # Binaries copied during install
 BINARIES="
-create-root-ca
 create-signing-ca
 create-server
 create-client
@@ -11,6 +12,16 @@ revoke-cert
 functions
 "
 
+TEMPLATES="
+client.tpl
+server.tpl
+signing.tpl
+"
+
+NOTE="\033[34;1m[*]\033[0m"
+SUCC="\033[32;1m[!]\033[0m"
+INPUT="\033[36;1m[>]\033[0m"
+ERR="\033[31;1m[!]\033[0m"
 
 override() {
     target=${1#USER_}
@@ -51,12 +62,12 @@ init_ca_home() {
 
     # Ensure we're initializing an empty directory
     if [ -d "${HOME}" ]; then
-	echo "${HOME} already exists, exiting"
+	echo -e "$ERR Directory '${HOME}' already exists, exiting"
 	exit 1
     fi
 
     if ! mkdir -p "${HOME}"; then
-        echo "Unable to create ${HOME}, exiting"
+        echo -e "$ERR Unable to create directory '${HOME}', exiting"
 	exit 1
     fi
 
@@ -96,51 +107,51 @@ init_ca_home() {
 generate_conf() {
     DEST=$1
 
-    echo -n "Short label for new CA [${CA_NAME}]: "
+    echo -e -n "$INPUT Short label for new CA [${CA_NAME}]: "
     read NAME
     if [ -n "${NAME}" ]; then
         CA_NAME=${NAME}
         CA_NAME=`echo ${CA_NAME} | sed 's/[^A-Za-z0-9-]/-/g'`
     fi
 
-    echo -n "Domain name for new CA [${CA_DOMAIN}]: "
+    echo -e -n "$INPUT Domain name for new CA [${CA_DOMAIN}]: "
     read DOMAIN
     if [ -n "${DOMAIN}" ]; then
         CA_DOMAIN=${DOMAIN}
     elif [ -z "${CA_DOMAIN}" ]; then
-        echo "Domain is required."
+        echo -e "$ERR Domain is required."
         exit 1
     fi
 
     echo
-    echo "CRL URL will be http://${CA_DOMAIN}/ca/${CA_NAME}.crl"
+    echo -e "$SUCC CRL URL will be http://${CA_DOMAIN}/ca/${CA_NAME}.crl"
     echo
 
-    echo -n "Default country code for new certificates [${CA_CERT_C}]: "
+    echo -e -n "$INPUT Default country code for new certificates [${CA_CERT_C}]: "
     read CERT_C
     if [ -n "${CERT_C}" ]; then
         CA_CERT_C=${CERT_C}
     fi
 
-    echo -n "Default state for new certificates [${CA_CERT_ST}]: "
+    echo -e -n "$INPUT Default state for new certificates [${CA_CERT_ST}]: "
     read CERT_ST
     if [ -n "${CERT_ST}" ]; then
         CA_CERT_ST=${CERT_ST}
     fi
 
-    echo -n "Default city for new certificates [${CA_CERT_L}]: "
+    echo -e -n "$INPUT Default city for new certificates [${CA_CERT_L}]: "
     read CERT_L
     if [ -n "${CERT_L}" ]; then
         CA_CERT_L=${CERT_L}
     fi
 
-    echo -n "Default org for new certificates [${CA_CERT_O}]: "
+    echo -e -n "$INPUT Default org for new certificates [${CA_CERT_O}]: "
     read CERT_O
     if [ -n "${CERT_O}" ]; then
         CA_CERT_O=${CERT_O}
     fi
 
-    echo -n "Default org unit for new certificates [${CA_CERT_OU}]: "
+    echo -e -n "$INPUT Default org unit for new certificates [${CA_CERT_OU}]: "
     read CERT_OU
     if [ -n "${CERT_OU}" ]; then
         CA_CERT_OU=${CERT_OU}
@@ -149,7 +160,7 @@ generate_conf() {
     echo
 
     CA_CERT_CN="${CA_CERT_O} Certificate Authority"
-    echo -n "Common Name for CA certificate [${CA_CERT_CN}]: "
+    echo -e -n "$INPUT Common Name for CA certificate [${CA_CERT_CN}]: "
     read CERT_CN
     if [ -n "${CERT_CN}" ]; then
         CA_CERT_CN=${CERT_CN}
