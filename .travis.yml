@@ -10,7 +10,7 @@ before_install:
 
 script:
   - |
-      ./create-root-ca -d travis-ca <<EOF
+      bash --posix ./create-root-ca -d travis-ca <<EOF
       travis-ca
       bogus.com
       US
@@ -24,7 +24,7 @@ script:
       EOF
   - cd travis-ca/
   - |
-      ./bin/create-signing-ca -d travis-signing << EOF
+      bash --posix ./bin/create-signing-ca -d travis-signing << EOF
       travis-signing
       bogus.com
       US
@@ -39,7 +39,7 @@ script:
       EOF
   - cd travis-signing/
   - |
-      ./bin/create-server -s travis-server -a 0.0.0.0 -a 1.1.1.1 << EOF
+      bash --posix ./bin/create-server -s travis-server -a 0.0.0.0 -a 1.1.1.1 << EOF
       signCA_password
       US
       California
@@ -49,7 +49,7 @@ script:
       travis-server
       EOF
   - |
-      ./bin/create-client -c travis-client << EOF
+      bash --posix ./bin/create-client -c travis-client << EOF
       signCA_password
       US
       California
@@ -60,7 +60,7 @@ script:
       travis-client@bogus.com
       EOF
   - |
-      ./bin/revoke-cert -c certs/travis-server.server.crt << EOF
+      bash --posix ./bin/revoke-cert -c certs/travis-server.server.crt << EOF
       1
       y
       signCA_password

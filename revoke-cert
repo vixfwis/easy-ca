@@ -28,7 +28,9 @@ while getopts c: FLAG; do
     esac
 done
 
-if [ "${CERT}" == "" ]; then
+if [ $OPTIND -le $# ]; then
+    echo -e -n "$ERR " && usage
+elif [ "${CERT}" = "" ]; then
     echo -e -n "$SUCC " && usage
 fi
 
@@ -40,9 +42,9 @@ if [ ! -f "${CERT}" ]; then
 fi
 
 # Fully-qualify path to cert
-CERT_PATH=$( fullpath ${CERT} )
+CERT_PATH=$( fullpath "${CERT}" )
 
-pushd ${BIN_DIR}/.. > /dev/null
+pushd "${BIN_DIR}"/.. > /dev/null
 
 echo "Reason for revocation: "
 echo
@@ -55,7 +57,7 @@ echo "6. cessationOfOperation"
 echo "7. certificateHold"
 echo
 echo -e -n "$INPUT Enter 1-7 [1]: "
-read INDEX
+read -r INDEX
 
 [ -z "${INDEX}" ] && INDEX="1"
 
@@ -74,30 +76,28 @@ echo
 echo -e "$SUCC You are about to revoke this certificate with reason '${REASON}'."
 echo
 echo -e -n "$INPUT Are you SURE you wish to continue? [y/N]: "
-read SURE
-if [ "${SURE}" != "y" -a "${SURE}" != "Y" ]; then
+read -r SURE
+if [ "${SURE}" != "y" ] && [ "${SURE}" != "Y" ]; then
     echo -e "$ERR Exiting."
     exit 1
 fi
 
 echo
 echo -e -n "$INPUT Enter passphase for signing CA key: "
-read -s PASS
+read -r -s PASS
 echo
 export CA_PASS=${PASS}
 
 echo -e "$NOTE Revoke the certificate"
 
-# Revoke the certificate
 openssl ca \
            -config conf/ca.conf \
-           -revoke ${CERT_PATH} \
-           -crl_reason ${REASON} \
+           -revoke "${CERT_PATH}" \
+           -crl_reason "${REASON}" \
            -passin env:CA_PASS
 
 echo -e "$NOTE Regenerate the CRL"
 
-# Regenerate the CRL
 openssl ca -gencrl \
            -config conf/ca.conf \
            -out crl/ca.crl \
