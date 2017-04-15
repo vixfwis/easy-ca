@@ -120,7 +120,7 @@ generate_conf() {
     fi
 
     echo
-    echo -e "$SUCC CRL URL will be http://${CA_DOMAIN}/ca/${CA_NAME}.crl"
+    echo -e "$SUCC CRL URL will be https://${CA_DOMAIN}/ca/${CA_NAME}.crl"
     echo
 
     echo -e -n "$INPUT Default country code for new certificates [${CA_CERT_C}]: "
@@ -155,13 +155,6 @@ generate_conf() {
 
     echo
 
-    CA_CERT_CN="${CA_CERT_O} Certificate Authority"
-    echo -e -n "$INPUT Common Name for CA certificate [${CA_CERT_CN}]: "
-    read -r CERT_CN
-    if [ -n "${CERT_CN}" ]; then
-        CA_CERT_CN=${CERT_CN}
-    fi
-
     cat > "${DEST}" << EOF
 CA_DOMAIN="${CA_DOMAIN}"
 CA_NAME="${CA_NAME}"
@@ -171,6 +164,9 @@ CA_CERT_ST="${CA_CERT_ST}"
 CA_CERT_L="${CA_CERT_L}"
 CA_CERT_O="${CA_CERT_O}"
 CA_CERT_OU="${CA_CERT_OU}"
-CA_CERT_CN="${CA_CERT_CN}"
+
+KEY_ALG="${KEY_ALG}"
+KEY_LENGTH_ROOTCA="${KEY_LENGTH_ROOTCA}"
+KEY_LENGTH_SIGNCA="${KEY_LENGTH_SIGNCA}"
 EOF
 }

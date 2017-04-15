@@ -30,7 +30,7 @@ done
 
 if [ $OPTIND -le $# ]; then
     echo -e -n "$ERR " && usage
-elif [ "x${CA_DIR}" == "x" ]; then
+elif [[ "${CA_DIR}" = "" ]]; then
     echo -e -n "$SUCC " && usage
 fi
 
@@ -42,6 +42,13 @@ init_ca_home "${CA_DIR}"
 generate_conf "${CA_DIR}"/bin/defaults.conf
 source "${CA_DIR}"/bin/defaults.conf
 
+CA_CERT_CN="${CA_CERT_O} Certificate Authority"
+echo -e -n "$INPUT Common Name for CA certificate [${CA_CERT_CN}]: "
+read -r CERT_CN
+if [ -n "${CERT_CN}" ]; then
+    CA_CERT_CN=${CERT_CN}
+fi
+
 echo
 echo -e -n "$INPUT Enter passphase for encrypting root CA key: "
 read -r -s PASS1
@@ -50,7 +57,7 @@ echo -e -n "$INPUT Verifying - Enter passphase for encrypting root CA key: "
 read -r -s PASS2
 echo
 
-if [ "x${PASS1}" != "x${PASS2}" ]; then
+if [[ "${PASS1}" != "${PASS2}" ]]; then
     echo "$ERR Passphrases did not match, exiting."
     exit 1
 fi
@@ -61,9 +68,9 @@ pushd "${CA_DIR}" > /dev/null
 # Generate the root CA openssl config
 template "${BIN_DIR}/templates/root.tpl" "conf/ca.conf"
 
-echo -e "$NOTE Creating the root CA key"
+echo -e "$NOTE Creating the root CA key (${KEY_ALG} with ${KEY_LENGTH_ROOTCA} bits)"
 
-openssl genrsa -out ca/private/ca.key -aes256 -passout env:CA_PASS 4096
+openssl genrsa -out ca/private/ca.key -"${KEY_ALG}" -passout env:CA_PASS "${KEY_LENGTH_ROOTCA}"
 chmod 0400 ca/private/ca.key
 
 echo -e "$NOTE Creating the root CA csr"
@@ -80,7 +87,6 @@ openssl ca -selfsign -batch -notext \
            -config conf/ca.conf \
            -in ca/ca.csr \
            -out ca/ca.crt \
-           -days 3652 \
            -extensions root_ca_ext \
            -passin env:CA_PASS
 

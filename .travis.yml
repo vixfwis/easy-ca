@@ -11,57 +11,57 @@ before_install:
 script:
   - |
       ./create-root-ca -d travis-ca <<EOF
-
-
-
-
-
-
-
-
-      password_1
-      password_1
+      travis-ca
+      bogus.com
+      US
+      California
+      San Francisco
+      Bogus Inc.
+      Operations
+      Bogus Inc. Certificate Authority
+      rootCA_password
+      rootCA_password
       EOF
   - cd travis-ca/
   - |
       ./bin/create-signing-ca -d travis-signing << EOF
-
-
-
-
-
-
-
-
-      password_2
-      password_2
-      password_1
+      travis-signing
+      bogus.com
+      US
+      California
+      San Francisco
+      Bogus Inc.
+      Operations
+      Bogus Inc. Certificate travis-signing
+      signCA_password
+      signCA_password
+      rootCA_password
       EOF
   - cd travis-signing/
   - |
       ./bin/create-server -s travis-server -a 0.0.0.0 -a 1.1.1.1 << EOF
-      password_2
-
-
-
-
-
-
-
+      signCA_password
+      US
+      California
+      San Francisco
+      Bogus Inc.
+      Jurisdiction of travis-server
+      travis-server
       EOF
   - |
       ./bin/create-client -c travis-client << EOF
-      password_2
-
-
-
-
-
-
+      signCA_password
+      US
+      California
+      San Francisco
+      Bogus Inc.
+      private
+      travis-client
+      travis-client@bogus.com
       EOF
   - |
       ./bin/revoke-cert -c certs/travis-server.server.crt << EOF
       1
       y
-      password_2
+      signCA_password
       EOF

@@ -1,5 +1,3 @@
-[ default ]
-
 [ req ]
 default_bits            = 2048                  # RSA key size
 default_days            = 730                   # How long to certify for
@@ -12,20 +10,20 @@ distinguished_name      = server_dn             # DN template
 req_extensions          = server_reqext         # Desired extensions
 
 [ server_dn ]
-countryName			= "1. Country Name (2 letters) "
-countryName_max			= 2
-countryName_default		= {{CA_CERT_C}}
-stateOrProvinceName		= "2. State or Province Name   "
-stateOrProvinceName_default	= {{CA_CERT_ST}}
-localityName			= "3. Locality Name            "
-localityName_default		= {{CA_CERT_L}}
-organizationName		= "4. Organization Name        "
-organizationName_default	= {{CA_CERT_O}}
-organizationalUnitName		= "5. Organizational Unit Name "
-organizationalUnitName_default	= {{CA_CERT_OU}}
-commonName			= "6. Common Name              "
-commonName_max			= 64
-commonName_default		= {{CA_HOSTNAME}}
+countryName                     = "1. Country Name (2 letters) "
+countryName_max                 = 2
+countryName_default             = {{CA_CERT_C}}
+stateOrProvinceName             = "2. State or Province Name   "
+stateOrProvinceName_default     = {{CA_CERT_ST}}
+localityName                    = "3. Locality Name            "
+localityName_default            = {{CA_CERT_L}}
+organizationName                = "4. Organization Name        "
+organizationName_default        = {{CA_CERT_O}}
+organizationalUnitName          = "5. Organizational Unit Name "
+organizationalUnitName_default  = Jurisdiction of {{CA_HOSTNAME}}
+commonName                      = "6. Common Name              "
+commonName_max                  = 64
+commonName_default              = {{CA_HOSTNAME}}
 
 [ server_reqext ]
 keyUsage                = critical,digitalSignature,keyEncipherment

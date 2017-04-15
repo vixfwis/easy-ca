@@ -25,7 +25,7 @@ ALT_NAME=
 
 while getopts s:a: FLAG; do
     case $FLAG in
-        s) SERVER_NAME=${OPTARG}
+        s) SERVER_NAME="${OPTARG}"
            if [ -z "${ALT_NAME}" ]; then
                ALT_NAME="DNS:${OPTARG}"
            else
@@ -43,19 +43,20 @@ while getopts s:a: FLAG; do
     esac
 done
 
-if [ "${SERVER_NAME}" == "" ]; then
+if [ $OPTIND -le $# ]; then
+    echo -e -n "$ERR " && usage
+elif [ "${SERVER_NAME}" = "" ]; then
     echo -e -n "$SUCC " && usage
 fi
 
 # Sanitize the commonName to make it suitable for use in filenames
-SAFE_NAME=`echo "${SERVER_NAME}" | sed 's/\*/star/g'`
-SAFE_NAME=`echo "${SAFE_NAME}" | sed 's/[^A-Za-z0-9-]/-/g'`
+SAFE_NAME=$(echo "${SERVER_NAME}" | sed 's/\*/star/g' | sed 's/[^A-Za-z0-9-]/-/g')
 
 echo -e "$SUCC Creating new SSL server certificate for:"
 echo -e "$SUCC commonName       ${SERVER_NAME}"
 echo -e "$SUCC subjectAltName   ${ALT_NAME}"
 
-pushd ${BIN_DIR}/.. > /dev/null
+pushd "${BIN_DIR}"/.. > /dev/null
 
 if [ -f conf/"${SAFE_NAME}".server.conf ]; then
     echo -e "$ERR Configuration already exists for '${SERVER_NAME}', exiting."
@@ -64,32 +65,29 @@ fi
 
 echo
 echo -e -n "$INPUT Enter passphase for signing CA key: "
-read -s PASS
+read -r -s PASS
 echo
 export CA_PASS=${PASS}
 
 # Generate the server openssl config
-export CA_HOSTNAME=${SERVER_NAME}
-export SAN=${ALT_NAME}
+export CA_HOSTNAME="${SERVER_NAME}"
+export SAN="${ALT_NAME}"
 template "${BIN_DIR}/templates/server.tpl" "conf/${SAFE_NAME}.server.conf"
 
 echo -e "$NOTE Creating the server key and csr"
 
-# Create the server key and csr
 openssl req -new -nodes \
-            -config conf/${SAFE_NAME}.server.conf \
-            -keyout private/${SAFE_NAME}.server.key \
-            -out csr/${SAFE_NAME}.server.csr
-chmod 0400 private/${SAFE_NAME}.server.key
+            -config conf/"${SAFE_NAME}".server.conf \
+            -keyout private/"${SAFE_NAME}".server.key \
+            -out csr/"${SAFE_NAME}".server.csr
+chmod 0400 private/"${SAFE_NAME}".server.key
 
 echo -e "$NOTE Creating the server certificate"
 
-# Create the server certificate
 openssl ca -batch -notext \
            -config conf/ca.conf \
-           -in csr/${SAFE_NAME}.server.csr \
-           -out certs/${SAFE_NAME}.server.crt \
-           -days 730 \
+           -in csr/"${SAFE_NAME}".server.csr \
+           -out certs/"${SAFE_NAME}".server.crt \
            -extensions server_ext \
            -passin env:CA_PASS
 
