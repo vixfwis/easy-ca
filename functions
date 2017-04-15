@@ -23,16 +23,10 @@ SUCC="\033[32;1m[!]\033[0m"
 INPUT="\033[36;1m[>]\033[0m"
 ERR="\033[31;1m[!]\033[0m"
 
-override() {
-    target=${1#USER_}
-    NAME=`echo $2 | sed 's/[^A-Za-z0-9-]/-/g'`
-    eval "${target}=\$${1}"
-}
-
 
 fullpath() {
-    cd $(dirname $1)
-    echo $PWD/$(basename $1)
+    cd "$(dirname "$1")"
+    echo "$PWD/$(basename "$1")"
 }
 
 ##
@@ -48,7 +42,7 @@ template() {
     for VAR in ${!CA_*}; do
         REGEX="${REGEX}s#{{\s*${VAR}\s*}}#${!VAR}#g; "
     done
-    sed -e "${REGEX}" < $1 > $2
+    sed -e "${REGEX}" < "$1" > "$2"
 }
 
 
@@ -58,33 +52,35 @@ template() {
 ## Initializes a CA directory skeleton at PATH
 ##
 init_ca_home() {
-    HOME=$1
+    CA_HOME="$1"
 
     # Ensure we're initializing an empty directory
-    if [ -d "${HOME}" ]; then
-	echo -e "$ERR Directory '${HOME}' already exists, exiting"
-	exit 1
+    if [ -d "${CA_HOME}" ]; then
+        echo -e "$ERR Directory '${CA_HOME}' already exists, exiting."
+        exit 1
     fi
 
-    if ! mkdir -p "${HOME}"; then
-        echo -e "$ERR Unable to create directory '${HOME}', exiting"
-	exit 1
+    if ! mkdir -p "${CA_HOME}"; then
+        echo -e "$ERR Unable to create directory '${CA_HOME}', exiting."
+        exit 1
     fi
 
-    pushd ${HOME} > /dev/null
+    echo -e "$NOTE Initializing CA home"
+
+    pushd "${CA_HOME}" > /dev/null
 
     # Create top-level CA structure
-    mkdir -p ca
-    mkdir -p ca/db
-    mkdir -p ca/private
+    mkdir ca
+    mkdir ca/db
+    mkdir ca/private
 
-    mkdir -p archive
-    mkdir -p bin
-    mkdir -p certs
-    mkdir -p crl
-    mkdir -p conf
-    mkdir -p csr
-    mkdir -p private
+    mkdir archive
+    mkdir bin
+    mkdir certs
+    mkdir crl
+    mkdir conf
+    mkdir csr
+    mkdir private
 
     # Secure key directories
     chmod 0700 ca/private
@@ -105,17 +101,17 @@ init_ca_home() {
 ## Generate the ca.conf for new root and signing CAs
 ##
 generate_conf() {
-    DEST=$1
+    DEST="$1"
 
     echo -e -n "$INPUT Short label for new CA [${CA_NAME}]: "
-    read NAME
+    read -r NAME
     if [ -n "${NAME}" ]; then
         CA_NAME=${NAME}
-        CA_NAME=`echo ${CA_NAME} | sed 's/[^A-Za-z0-9-]/-/g'`
+        CA_NAME=$(echo "${CA_NAME}" | sed 's/[^A-Za-z0-9-]/-/g')
     fi
 
     echo -e -n "$INPUT Domain name for new CA [${CA_DOMAIN}]: "
-    read DOMAIN
+    read -r DOMAIN
     if [ -n "${DOMAIN}" ]; then
         CA_DOMAIN=${DOMAIN}
     elif [ -z "${CA_DOMAIN}" ]; then
@@ -128,31 +124,31 @@ generate_conf() {
     echo
 
     echo -e -n "$INPUT Default country code for new certificates [${CA_CERT_C}]: "
-    read CERT_C
+    read -r CERT_C
     if [ -n "${CERT_C}" ]; then
         CA_CERT_C=${CERT_C}
     fi
 
     echo -e -n "$INPUT Default state for new certificates [${CA_CERT_ST}]: "
-    read CERT_ST
+    read -r CERT_ST
     if [ -n "${CERT_ST}" ]; then
         CA_CERT_ST=${CERT_ST}
     fi
 
     echo -e -n "$INPUT Default city for new certificates [${CA_CERT_L}]: "
-    read CERT_L
+    read -r CERT_L
     if [ -n "${CERT_L}" ]; then
         CA_CERT_L=${CERT_L}
     fi
 
     echo -e -n "$INPUT Default org for new certificates [${CA_CERT_O}]: "
-    read CERT_O
+    read -r CERT_O
     if [ -n "${CERT_O}" ]; then
         CA_CERT_O=${CERT_O}
     fi
 
     echo -e -n "$INPUT Default org unit for new certificates [${CA_CERT_OU}]: "
-    read CERT_OU
+    read -r CERT_OU
     if [ -n "${CERT_OU}" ]; then
         CA_CERT_OU=${CERT_OU}
     fi
@@ -161,12 +157,12 @@ generate_conf() {
 
     CA_CERT_CN="${CA_CERT_O} Certificate Authority"
     echo -e -n "$INPUT Common Name for CA certificate [${CA_CERT_CN}]: "
-    read CERT_CN
+    read -r CERT_CN
     if [ -n "${CERT_CN}" ]; then
         CA_CERT_CN=${CERT_CN}
     fi
 
-    cat > ${DEST} << EOF
+    cat > "${DEST}" << EOF
 CA_DOMAIN="${CA_DOMAIN}"
 CA_NAME="${CA_NAME}"
 
