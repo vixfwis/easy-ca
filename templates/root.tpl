@@ -13,7 +13,7 @@ name_opt                = multiline,-esc_msb,utf8  # Display UTF-8 characters
 #
 
 [ req ]
-default_bits            = 4096                  # RSA key size
+default_bits            = {{KEY_LENGTH_ROOTCA}} # RSA key size
 default_days            = 1826                  # How long to certify for
 encrypt_key             = yes                   # Protect private key
 default_md              = sha256                # MD to use

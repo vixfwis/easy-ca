@@ -1,5 +1,5 @@
 [ req ]
-default_bits            = 2048                  # RSA key size
+default_bits            = {{KEY_LENGTH_ENDCRT}} # RSA key size
 default_days            = 730                   # How long to certify for
 encrypt_key             = no                    # Protect private key
 default_md              = sha256                # MD to use
@@ -7,7 +7,7 @@ utf8                    = yes                   # Input is UTF-8
 string_mask             = utf8only              # Emit UTF-8 strings
 prompt                  = yes                   # Prompt for DN
 distinguished_name      = client_dn             # DN template
-# extensions are set by CA
+# extensions are set by signing CA
 #req_extensions          = client_reqext         # Desired extensions
 
 [ client_dn ]
