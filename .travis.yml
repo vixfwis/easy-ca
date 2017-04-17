@@ -39,14 +39,14 @@ script:
       EOF
   - cd travis-signing/
   - |
-      bash --posix ./bin/create-server -s travis-server -a 0.0.0.0 -a 1.1.1.1 << EOF
+      bash --posix ./bin/create-server -s travis-server.bogus.com -a 0.0.0.0 -a 1.1.1.1 << EOF
       signCA_password
       US
       California
       San Francisco
       Bogus Inc.
-      Jurisdiction of travis-server
-      travis-server
+      Jurisdiction of travis-server.bogus-com
+      travis-server.bogus.com
       EOF
   - |
       bash --posix ./bin/create-client -c travis-client << EOF
@@ -62,6 +62,12 @@ script:
   - |
       bash --posix ./bin/revoke-cert -c certs/travis-server.server.crt << EOF
       1
+      y
+      signCA_password
+      EOF
+  - |
+      bash --posix ./bin/revoke-cert -c certs/travis-client.client.crt << EOF
+      5
       y
       signCA_password
       EOF
