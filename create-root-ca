@@ -88,6 +88,7 @@ echo -e "$NOTE Creating the root CA certificate"
 openssl ca -selfsign -batch -notext \
            -config conf/ca.conf \
            -in ca/ca.csr \
+           -out ca/ca.crt \
            -extensions root_ca_ext \
            -passin env:CA_PASS
 
