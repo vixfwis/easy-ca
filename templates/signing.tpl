@@ -13,16 +13,16 @@ name_opt                = multiline,-esc_msb,utf8  # Display UTF-8 characters
 #
 
 [ req ]
-default_bits            = {{KEY_LENGTH_SIGNCA}} # RSA key size
-default_days            = 730                   # How long to certify for
-encrypt_key             = yes                   # Protect private key
-default_md              = sha256                # MD to use
-utf8                    = yes                   # Input is UTF-8
-string_mask             = utf8only              # Emit UTF-8 strings
-prompt                  = no                    # Don't prompt for DN
-distinguished_name      = req_dn                # DN section
+default_bits            = {{CA_KEY_LENGTH_SIGNCA}} # RSA key size
+default_days            = 730                      # How long to certify for
+encrypt_key             = yes                      # Protect private key
+default_md              = sha256                   # MD to use
+utf8                    = yes                      # Input is UTF-8
+string_mask             = utf8only                 # Emit UTF-8 strings
+prompt                  = no                       # Don't prompt for DN
+distinguished_name      = req_dn                   # DN section
 # extensions are set by signing CA
-#req_extensions          = req_ext               # Desired extensions
+#req_extensions          = req_ext                 # Desired extensions
 
 [ req_dn ]
 countryName             = "{{CA_CERT_C}}"

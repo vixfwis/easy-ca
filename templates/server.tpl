@@ -1,14 +1,14 @@
 [ req ]
-default_bits            = {{KEY_LENGTH_ENDCRT}} # RSA key size
-default_days            = 730                   # How long to certify for
-encrypt_key             = no                    # Protect private key
-default_md              = sha256                # MD to use
-utf8                    = yes                   # Input is UTF-8
-string_mask             = utf8only              # Emit UTF-8 strings
-prompt                  = yes                   # Prompt for DN
-distinguished_name      = server_dn             # DN template
+default_bits            = {{CA_KEY_LENGTH_ENDCRT}} # RSA key size
+default_days            = 730                      # How long to certify for
+encrypt_key             = no                       # Protect private key
+default_md              = sha256                   # MD to use
+utf8                    = yes                      # Input is UTF-8
+string_mask             = utf8only                 # Emit UTF-8 strings
+prompt                  = yes                      # Prompt for DN
+distinguished_name      = server_dn                # DN template
 # extensions are set by signing CA
-#req_extensions          = server_reqext         # Desired extensions
+#req_extensions          = server_reqext           # Desired extensions
 
 [ server_dn ]
 countryName                     = "1. Country Name (2 letters) "

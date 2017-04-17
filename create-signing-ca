@@ -81,7 +81,7 @@ template "${BIN_DIR}/templates/signing.tpl" "conf/ca.conf"
 echo -e "$NOTE Creating the signing sub-CA key"
 
 # Create the signing CA key
-openssl genrsa -out ca/private/ca.key -"${KEY_ALG}" -passout env:CA_PASS "${KEY_LENGTH_SIGNCA}"
+openssl genrsa -out ca/private/ca.key -"${CA_KEY_ALG}" -passout env:CA_PASS "${CA_KEY_LENGTH_SIGNCA}"
 chmod 0400 ca/private/ca.key
 
 echo -e "$NOTE Creating the signing sub-CA csr"

@@ -68,9 +68,9 @@ pushd "${CA_DIR}" > /dev/null
 # Generate the root CA openssl config
 template "${BIN_DIR}/templates/root.tpl" "conf/ca.conf"
 
-echo -e "$NOTE Creating the root CA key (${KEY_ALG} with ${KEY_LENGTH_ROOTCA} bits)"
+echo -e "$NOTE Creating the root CA key (${CA_KEY_ALG} with ${KEY_LENGTH_ROOTCA} bits)"
 
-openssl genrsa -out ca/private/ca.key -"${KEY_ALG}" -passout env:CA_PASS "${KEY_LENGTH_ROOTCA}"
+openssl genrsa -out ca/private/ca.key -"${CA_KEY_ALG}" -passout env:CA_PASS "${CA_KEY_LENGTH_ROOTCA}"
 chmod 0400 ca/private/ca.key
 
 echo -e "$NOTE Creating the root CA csr"
