@@ -75,6 +75,10 @@ openssl ca -batch -notext \
            -extensions client_ext \
            -passin env:CA_PASS
 
+echo -e "$NOTE Verifying trusted chain"
+
+openssl verify -CAfile ca/chain.pem certs/"${SAFE_NAME}".client.crt
+
 popd > /dev/null
 
 unset CA_PASS

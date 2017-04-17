@@ -103,6 +103,10 @@ openssl ca -gencrl \
            -out crl/ca.crl \
            -passin env:CA_PASS
 
+echo -e "$NOTE Printing new CRL"
+
+openssl crl -in ca/ca.crl -noout -text
+
 popd > /dev/null
 
 echo -e "$SUCC Server certificate '${CERT}' revoked."
