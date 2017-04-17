@@ -39,7 +39,7 @@ script:
       EOF
   - cd travis-signing/
   - |
-      bash --posix ./bin/create-server -s travis-server.bogus.com -a 0.0.0.0 -a 1.1.1.1 << EOF
+      bash --posix ./bin/create-server -s travis-server.bogus.com -a www.travis-server.bogus.com << EOF
       US
       California
       San Francisco
