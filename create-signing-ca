@@ -112,7 +112,7 @@ openssl ca -gencrl -batch \
 
 echo -e "$NOTE Creating the chain bundle"
 
-if [ -f "${PARENT}/ca/chain.pem" ]; then
+if [ -f "${PARENT}/ca/chain.pem" ] || [ -L "${PARENT}/ca/chain.pem" ]; then
     cat "${PARENT}"/ca/chain.pem > ca/chain.pem
 fi
 cat ca/ca.crt >> ca/chain.pem
