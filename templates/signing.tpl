@@ -44,28 +44,32 @@ commonName              = "{{CA_CERT_CN}}"
 #
 
 [ ca ]
-default_ca              = sign_ca               # The default CA section
+default_ca              = sign_ca                    # The default CA section
 
 [ sign_ca ]
-cert_opt                = ca_default            # Certificate display options
-certificate             = ca/ca.crt             # The CA cert
-copy_extensions         = copy                  # Copy extensions from CSR
-crl                     = crl/ca.crl            # CRL path
-crl_extensions          = crl_ext               # CRL extensions
-crlnumber               = ca/db/crl.srl         # CRL number file
-database                = ca/db/certificate.db  # Index file
-default_crl_days        = 30                    # How long before next CRL
-default_days            = 730                   # How long to certify for
-default_md              = sha256                # MD to use
-email_in_dn             = no                    # Add email to cert DN
-name_opt                = ca_default            # Subject DN display options
-new_certs_dir           = archive               # Certificate archive
-policy                  = sign_ca_pol           # Default naming policy
-preserve                = no                    # Keep passed DN ordering
-private_key             = ca/private/ca.key     # CA private key
-serial                  = ca/db/crt.srl         # Serial number file
-unique_subject          = no                    # Require unique subject
-x509_extensions         = server_ext            # Default cert extensions
+cert_opt                = ca_default                 # Certificate display options
+dir                     = {{CA_PATH}}                # Full path to root CA dir
+certs                   = $dir/certs                 # Certificates dir
+certificate             = $dir/ca/ca.crt             # The CA cert
+copy_extensions         = copy                       # Copy extensions from CSR
+crl                     = $dir/crl/ca.crl            # CRL path
+crl_dir                 = $dir/crl                   # Directory for CRL's
+crl_extensions          = crl_ext                    # CRL extensions
+crlnumber               = $dir/ca/db/crl.srl         # CRL number file
+database                = $dir/ca/db/certificate.db  # Index file
+default_crl_days        = 30                         # How long before next CRL
+default_days            = 730                        # How long to certify for
+default_md              = sha256                     # MD to use
+email_in_dn             = no                         # Add email to cert DN
+name_opt                = ca_default                 # Subject DN display options
+new_certs_dir           = archive                    # Certificate archive
+policy                  = sign_ca_pol                # Default naming policy
+preserve                = no                         # Keep passed DN ordering
+private_key             = $dir/ca/private/ca.key     # CA private key
+RANDFILE                = $dir/ca/private/.rand      # Radomnumber file
+serial                  = $dir/ca/db/crt.srl         # Serial number file
+unique_subject          = no                         # Require unique subject
+x509_extensions         = server_ext                 # Default cert extensions
 
 [ sign_ca_pol ]
 countryName             = match                 # Must match

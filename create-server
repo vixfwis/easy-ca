@@ -6,8 +6,8 @@ set -eu
 umask 0077
 
 BIN_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-source "${BIN_DIR}"/functions
-source "${BIN_DIR}"/defaults.conf
+source "${BIN_DIR}/functions"
+source "${BIN_DIR}/defaults.conf"
 
 usage() {
     echo "Usage: $0 -s SERVER_NAME [-a ALT_NAME]..."
@@ -67,7 +67,7 @@ echo
 echo -e -n "$INPUT Enter passphase for signing CA key: "
 read -r -s PASS
 echo
-export CA_PASS=${PASS}
+export CA_PASS="${PASS}"
 
 # Generate the server openssl config
 export CA_HOSTNAME="${SERVER_NAME}"
@@ -77,23 +77,23 @@ template "${BIN_DIR}/templates/server.tpl" "conf/${SAFE_NAME}.server.conf"
 echo -e "$NOTE Creating the server key and csr"
 
 openssl req -new -nodes \
-            -config conf/"${SAFE_NAME}".server.conf \
-            -keyout private/"${SAFE_NAME}".server.key \
-            -out csr/"${SAFE_NAME}".server.csr
-chmod 0400 private/"${SAFE_NAME}".server.key
+            -config "conf/${SAFE_NAME}.server.conf" \
+            -keyout "private/${SAFE_NAME}.server.key" \
+            -out "csr/${SAFE_NAME}.server.csr"
+chmod 0400 "private/${SAFE_NAME}.server.key"
 
 echo -e "$NOTE Creating the server certificate"
 
 openssl ca -batch -notext \
            -config conf/ca.conf \
-           -in csr/"${SAFE_NAME}".server.csr \
-           -out certs/"${SAFE_NAME}".server.crt \
+           -in "csr/${SAFE_NAME}.server.csr" \
+           -out "certs/${SAFE_NAME}.server.crt" \
            -extensions server_ext \
            -passin env:CA_PASS
 
 echo -e "$NOTE Verifying trusted chain"
 
-openssl verify -CAfile ca/chain.pem certs/"${SAFE_NAME}".server.crt
+openssl verify -CAfile ca/chain.pem "certs/${SAFE_NAME}.server.crt"
 
 popd > /dev/null
 

@@ -6,8 +6,8 @@ set -eu
 umask 0077
 
 BIN_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-source "${BIN_DIR}"/functions
-source "${BIN_DIR}"/defaults.conf
+source "${BIN_DIR}/functions"
+source "${BIN_DIR}/defaults.conf"
 
 usage() {
     echo "Usage: $0 -d CA_DIR"
@@ -34,22 +34,23 @@ elif [[ "${CA_DIR}" = "" ]]; then
     echo -e -n "$SUCC " && usage
 fi
 
-PARENT="${BIN_DIR}"/..
+PARENT="${BIN_DIR}/.."
 CA_NAME="$( basename "${CA_DIR}" )"
+CA_PATH="$( fullpath "${CA_DIR}")"
 
 echo
 echo -e "$NOTE Creating new signing sub-CA in '${CA_DIR}'"
 echo
 
 init_ca_home "${CA_DIR}"
-generate_conf "${CA_DIR}"/bin/defaults.conf
-source "${CA_DIR}"/bin/defaults.conf
+generate_conf "${CA_DIR}/bin/defaults.conf"
+source "${CA_DIR}/bin/defaults.conf"
 
 CA_CERT_CN="${CA_CERT_O} Certificate ${CA_NAME}"
 echo -e -n "$INPUT Common Name for CA certificate [${CA_CERT_CN}]: "
 read -r CERT_CN
 if [ -n "${CERT_CN}" ]; then
-    CA_CERT_CN=${CERT_CN}
+    CA_CERT_CN="${CERT_CN}"
 fi
 
 echo
@@ -97,8 +98,8 @@ echo -e "$NOTE Creating the signing sub-CA certificate"
 pushd "${PARENT}" > /dev/null
 openssl ca -batch -notext \
            -config conf/ca.conf \
-           -in "${CA_DIR}"/ca/ca.csr \
-           -out "${CA_DIR}"/ca/ca.crt \
+           -in "${CA_DIR}/ca/ca.csr" \
+           -out "${CA_DIR}/ca/ca.crt" \
            -extensions signing_ca_ext \
            -passin env:CA_PARENT_PASS
 popd > /dev/null
@@ -112,20 +113,26 @@ openssl ca -gencrl -batch \
 
 echo -e "$NOTE Creating the chain bundle"
 
-if [ -f "${PARENT}/ca/chain.pem" ] || [ -L "${PARENT}/ca/chain.pem" ]; then
-    cat "${PARENT}"/ca/chain.pem > ca/chain.pem
+if [ -f "${PARENT}/ca/chain.pem" ]; then
+    cat "${PARENT}/ca/chain.pem" > ca/chain.pem
+else
+    cat "${PARENT}/ca/ca.crt" > ca/chain.pem
 fi
 cat ca/ca.crt >> ca/chain.pem
+
+echo -e "$NOTE Verifying trusted chain"
+
+openssl verify -CAfile ca/chain.pem ca/ca.crt
 
 echo -e "$NOTE Copying toolchain (symlinking)"
 
 # Replicate the existing binary directory
 for BIN in ${BINARIES_SIGN}; do
-    ln -s "${BIN_DIR}"/"${BIN}" bin/
+    ln -s "${BIN_DIR}/${BIN}" bin/
 done
 mkdir bin/templates/
 for TPL in ${TEMPLATES_SIGN}; do
-    ln -s "${BIN_DIR}"/templates/"${TPL}" bin/templates/
+    ln -s "${BIN_DIR}/templates/${TPL}" bin/templates/
 done
 
 popd > /dev/null

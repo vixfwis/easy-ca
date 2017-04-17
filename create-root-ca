@@ -6,8 +6,8 @@ set -eu
 umask 0077
 
 BIN_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-source "${BIN_DIR}"/functions
-source "${BIN_DIR}"/defaults.conf
+source "${BIN_DIR}/functions"
+source "${BIN_DIR}/defaults.conf"
 
 usage() {
     echo "Usage: $0 -d CA_DIR"
@@ -34,19 +34,19 @@ elif [[ "${CA_DIR}" = "" ]]; then
     echo -e -n "$SUCC " && usage
 fi
 
-CA_NAME=$( basename "${CA_DIR}" )
+CA_NAME="$( basename "${CA_DIR}" )"
 
 echo -e "$NOTE Creating root CA in dir '${CA_DIR}'"
 
 init_ca_home "${CA_DIR}"
-generate_conf "${CA_DIR}"/bin/defaults.conf
-source "${CA_DIR}"/bin/defaults.conf
+generate_conf "${CA_DIR}/bin/defaults.conf"
+source "${CA_DIR}/bin/defaults.conf"
 
 CA_CERT_CN="${CA_CERT_O} Certificate Authority"
 echo -e -n "$INPUT Common Name for CA certificate [${CA_CERT_CN}]: "
 read -r CERT_CN
 if [ -n "${CERT_CN}" ]; then
-    CA_CERT_CN=${CERT_CN}
+    CA_CERT_CN="${CERT_CN}"
 fi
 
 echo
@@ -63,7 +63,7 @@ if [[ "${PASS1}" != "${PASS2}" ]]; then
 fi
 export CA_PASS="${PASS1}"
 
-CA_PATH=$( fullpath "${CA_DIR}")
+CA_PATH="$( fullpath "${CA_DIR}")"
 
 pushd "${CA_DIR}" > /dev/null
 
@@ -98,18 +98,14 @@ openssl ca -gencrl -batch \
            -config conf/ca.conf \
            -passin env:CA_PASS
 
-echo -e "$NOTE Creating the chain bundle"
-
-ln -s ca/ca.crt ca/chain.pem
-
 echo -e "$NOTE Copying toolchain (symlinking)"
 
 for BIN in ${BINARIES_ROOT}; do
-    ln -s "${BIN_DIR}"/"${BIN}" bin/
+    ln -s "${BIN_DIR}/${BIN}" bin/
 done
 mkdir bin/templates/
 for TPL in ${TEMPLATES_ROOT}; do
-    ln -s "${BIN_DIR}"/templates/"${TPL}" bin/templates/
+    ln -s "${BIN_DIR}/templates/${TPL}" bin/templates/
 done
 
 popd > /dev/null

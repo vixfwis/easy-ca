@@ -6,8 +6,8 @@ set -eu
 umask 0077
 
 BIN_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-source "${BIN_DIR}"/functions
-source "${BIN_DIR}"/defaults.conf
+source "${BIN_DIR}/functions"
+source "${BIN_DIR}/defaults.conf"
 
 usage() {
     echo "Usage: $0 -c CLIENT_NAME"
@@ -38,9 +38,9 @@ SAFE_NAME=$(echo "$CLIENT_NAME" | sed 's/\*/star/g' | sed 's/[^A-Za-z0-9-]/-/g')
 
 echo -e "$SUCC Creating new client certificate for '${CLIENT_NAME}'"
 
-pushd "${BIN_DIR}"/.. > /dev/null
+pushd "${BIN_DIR}/.." > /dev/null
 
-if [ -f conf/"${SAFE_NAME}".client.conf ]; then
+if [ -f "conf/${SAFE_NAME}.client.conf" ]; then
     echo -e "$ERR Configuration already exists for '${CLIENT_NAME}', exiting."
     exit 1
 fi
@@ -49,7 +49,7 @@ echo
 echo -e -n "$INPUT Enter passphase for signing CA key: "
 read -r -s PASS
 echo
-export CA_PASS=${PASS}
+export CA_PASS="${PASS}"
 
 # Generate the client cert openssl config
 export SAN=""
@@ -60,24 +60,24 @@ echo -e "$NOTE Creating the client key and csr"
 
 # Create the client key and csr
 openssl req -new -nodes \
-            -config conf/"${SAFE_NAME}".client.conf \
-            -keyout private/"${SAFE_NAME}".client.key \
-            -out csr/"${SAFE_NAME}".client.csr
-chmod 0400 private/"${SAFE_NAME}".client.key
+            -config "conf/${SAFE_NAME}.client.conf" \
+            -keyout "private/${SAFE_NAME}.client.key" \
+            -out "csr/${SAFE_NAME}.client.csr"
+chmod 0400 "private/${SAFE_NAME}.client.key"
 
 echo -e "$NOTE Creating the client certificate"
 
 # Create the client certificate
 openssl ca -batch -notext \
            -config conf/ca.conf \
-           -in csr/"${SAFE_NAME}".client.csr \
-           -out certs/"${SAFE_NAME}".client.crt \
+           -in "csr/${SAFE_NAME}.client.csr" \
+           -out "certs/${SAFE_NAME}.client.crt" \
            -extensions client_ext \
            -passin env:CA_PASS
 
 echo -e "$NOTE Verifying trusted chain"
 
-openssl verify -CAfile ca/chain.pem certs/"${SAFE_NAME}".client.crt
+openssl verify -CAfile ca/chain.pem "certs/${SAFE_NAME}.client.crt"
 
 popd > /dev/null
 

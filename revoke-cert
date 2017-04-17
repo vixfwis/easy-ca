@@ -6,8 +6,8 @@ set -eu
 umask 0077
 
 BIN_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-source "${BIN_DIR}"/functions
-source "${BIN_DIR}"/defaults.conf
+source "${BIN_DIR}/functions"
+source "${BIN_DIR}/defaults.conf"
 
 usage() {
     echo "Usage: $0 -c CERT"
@@ -44,7 +44,7 @@ fi
 # Fully-qualify path to cert
 CERT_PATH=$( fullpath "${CERT}" )
 
-pushd "${BIN_DIR}"/.. > /dev/null
+pushd "${BIN_DIR}/.." > /dev/null
 
 echo "Reason for revocation: "
 echo
@@ -86,7 +86,7 @@ echo
 echo -e -n "$INPUT Enter passphase for signing CA key: "
 read -r -s PASS
 echo
-export CA_PASS=${PASS}
+export CA_PASS="${PASS}"
 
 echo -e "$NOTE Revoke the certificate"
 

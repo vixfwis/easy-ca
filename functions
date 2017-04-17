@@ -120,14 +120,13 @@ generate_conf() {
     echo -e -n "$INPUT Short label for new CA [${CA_NAME}]: "
     read -r NAME
     if [ -n "${NAME}" ]; then
-        CA_NAME=${NAME}
-        CA_NAME=$(echo "${CA_NAME}" | sed 's/[^A-Za-z0-9-]/-/g')
+        CA_NAME=$(echo "${NAME}" | sed 's/[^A-Za-z0-9-]/-/g')
     fi
 
     echo -e -n "$INPUT Domain name for new CA [${CA_DOMAIN}]: "
     read -r DOMAIN
     if [ -n "${DOMAIN}" ]; then
-        CA_DOMAIN=${DOMAIN}
+        CA_DOMAIN="${DOMAIN}"
     elif [ -z "${CA_DOMAIN}" ]; then
         echo -e "$ERR Domain is required."
         exit 1
@@ -140,31 +139,31 @@ generate_conf() {
     echo -e -n "$INPUT Default country code for new certificates [${CA_CERT_C}]: "
     read -r CERT_C
     if [ -n "${CERT_C}" ]; then
-        CA_CERT_C=${CERT_C}
+        CA_CERT_C="${CERT_C}"
     fi
 
     echo -e -n "$INPUT Default state for new certificates [${CA_CERT_ST}]: "
     read -r CERT_ST
     if [ -n "${CERT_ST}" ]; then
-        CA_CERT_ST=${CERT_ST}
+        CA_CERT_ST="${CERT_ST}"
     fi
 
     echo -e -n "$INPUT Default city for new certificates [${CA_CERT_L}]: "
     read -r CERT_L
     if [ -n "${CERT_L}" ]; then
-        CA_CERT_L=${CERT_L}
+        CA_CERT_L="${CERT_L}"
     fi
 
     echo -e -n "$INPUT Default organization for new certificates [${CA_CERT_O}]: "
     read -r CERT_O
     if [ -n "${CERT_O}" ]; then
-        CA_CERT_O=${CERT_O}
+        CA_CERT_O="${CERT_O}"
     fi
 
     echo -e -n "$INPUT Default organization unit for new certificates [${CA_CERT_OU}]: "
     read -r CERT_OU
     if [ -n "${CERT_OU}" ]; then
-        CA_CERT_OU=${CERT_OU}
+        CA_CERT_OU="${CERT_OU}"
     fi
 
     echo
