@@ -47,6 +47,7 @@ default_ca              = root_ca                    # The default CA section
 
 [ root_ca ]
 cert_opt                = ca_default                 # Certificate display options
+dir                     = {{CA_PATH}}                # Full path to root CA dir
 certs                   = $dir/certs                 # Certificates dir
 certificate             = $dir/ca/ca.crt             # The CA cert
 copy_extensions         = copy                       # Copy extensions from CSR
@@ -58,7 +59,6 @@ database                = $dir/ca/db/certificate.db  # Index file
 default_crl_days        = 30                         # How long before next CRL
 default_days            = 1826                       # How long to certify for
 default_md              = sha256                     # MD to use
-dir                     = {{CA_PATH}}                # Full path to root CA dir
 email_in_dn             = no                         # Add email to cert DN
 name_opt                = ca_default                 # Subject DN display options
 new_certs_dir           = $dir/archive               # Certificate archive
