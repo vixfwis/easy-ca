@@ -28,6 +28,7 @@ emailAddress_max                = 40
 
 [ client_reqext ]
 keyUsage                = critical,digitalSignature
-extendedKeyUsage        = clientAuth
+basicConstraints        = critical,CA:false
+extendedKeyUsage        = critical,clientAuth
 subjectKeyIdentifier    = hash
 subjectAltName          = email:move
