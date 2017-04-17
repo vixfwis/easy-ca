@@ -79,6 +79,7 @@ echo -e "$NOTE Creating the root CA csr"
 
 openssl req -new -batch \
             -config conf/ca.conf \
+            -key ca/private/ca.key
             -out ca/ca.csr \
             -passin env:CA_PASS
 

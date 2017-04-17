@@ -21,7 +21,8 @@ utf8                    = yes                      # Input is UTF-8
 string_mask             = utf8only                 # Emit UTF-8 strings
 prompt                  = no                       # Don't prompt for DN
 distinguished_name      = req_dn                   # DN section
-req_extensions          = req_ext                  # Desired extensions
+# extensions are set by signing CA
+#req_extensions         = req_ext                  # Desired extensions
 
 [ req_dn ]
 countryName             = "{{CA_CERT_C}}"
@@ -31,10 +32,10 @@ organizationName        = "{{CA_CERT_O}}"
 organizationalUnitName  = "{{CA_CERT_OU}}"
 commonName              = "{{CA_CERT_CN}}"
 
-[ req_ext ]
-keyUsage                = critical,keyCertSign,cRLSign
-basicConstraints        = critical,CA:true
-subjectKeyIdentifier    = hash
+#[ req_ext ]
+#keyUsage                = critical,keyCertSign,cRLSign
+#basicConstraints        = critical,CA:true
+#subjectKeyIdentifier    = hash
 
 ########################################
 #
