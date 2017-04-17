@@ -43,9 +43,9 @@ script:
       signCA_password
       US
       California
-      "San Francisco"
-      "Bogus Inc."
-      "Jurisdiction of travis-server.bogus-com"
+      San Francisco
+      Bogus Inc.
+      Jurisdiction of travis-server.bogus-com
       travis-server.bogus.com
       EOF
   - |
