@@ -105,6 +105,7 @@ subjectKeyIdentifier    = hash
 authorityKeyIdentifier  = keyid:always
 authorityInfoAccess     = @issuer_info
 crlDistributionPoints   = @crl_info
+subjectAltName          = $ENV::SAN
 
 [ client_ext ]
 keyUsage                = critical,digitalSignature

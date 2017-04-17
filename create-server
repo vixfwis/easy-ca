@@ -63,12 +63,6 @@ if [ -f conf/"${SAFE_NAME}".server.conf ]; then
     exit 1
 fi
 
-echo
-echo -e -n "$INPUT Enter passphase for signing CA key: "
-read -r -s PASS
-echo
-export CA_PASS="${PASS}"
-
 # Generate the server openssl config
 export CA_HOSTNAME="${SERVER_NAME}"
 export SAN="${ALT_NAME}"
@@ -81,6 +75,12 @@ openssl req -new -nodes \
             -keyout "private/${SAFE_NAME}.server.key" \
             -out "csr/${SAFE_NAME}.server.csr"
 chmod 0400 "private/${SAFE_NAME}.server.key"
+
+echo
+echo -e -n "$INPUT Enter passphase for signing CA key: "
+read -r -s PASS
+echo
+export CA_PASS="${PASS}"
 
 echo -e "$NOTE Creating the server certificate"
 

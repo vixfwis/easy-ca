@@ -40,17 +40,16 @@ script:
   - cd travis-signing/
   - |
       bash --posix ./bin/create-server -s travis-server.bogus.com -a 0.0.0.0 -a 1.1.1.1 << EOF
-      signCA_password
       US
       California
       San Francisco
       Bogus Inc.
       Jurisdiction of travis-server.bogus-com
       travis-server.bogus.com
+      signCA_password
       EOF
   - |
       bash --posix ./bin/create-client -c travis-client << EOF
-      signCA_password
       US
       California
       San Francisco
@@ -58,6 +57,7 @@ script:
       private
       travis-client
       travis-client@bogus.com
+      signCA_password
       EOF
   - |
       bash --posix ./bin/revoke-cert -c certs/travis-server-bogus-com.server.crt << EOF

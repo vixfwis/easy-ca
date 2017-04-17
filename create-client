@@ -45,12 +45,6 @@ if [ -f "conf/${SAFE_NAME}.client.conf" ]; then
     exit 1
 fi
 
-echo
-echo -e -n "$INPUT Enter passphase for signing CA key: "
-read -r -s PASS
-echo
-export CA_PASS="${PASS}"
-
 # Generate the client cert openssl config
 export SAN=""
 export CA_USERNAME="${CLIENT_NAME}"
@@ -64,6 +58,12 @@ openssl req -new -nodes \
             -keyout "private/${SAFE_NAME}.client.key" \
             -out "csr/${SAFE_NAME}.client.csr"
 chmod 0400 "private/${SAFE_NAME}.client.key"
+
+echo
+echo -e -n "$INPUT Enter passphase for signing CA key: "
+read -r -s PASS
+echo
+export CA_PASS="${PASS}"
 
 echo -e "$NOTE Creating the client certificate"
 

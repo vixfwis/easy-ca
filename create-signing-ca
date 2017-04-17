@@ -66,6 +66,7 @@ if [ "${PASS1}" != "${PASS2}" ]; then
     exit 1
 fi
 export CA_PASS"=${PASS1}"
+export SAN=""
 
 echo
 
