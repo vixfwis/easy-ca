@@ -155,13 +155,13 @@ generate_conf() {
         CA_CERT_L=${CERT_L}
     fi
 
-    echo -e -n "$INPUT Default org for new certificates [${CA_CERT_O}]: "
+    echo -e -n "$INPUT Default organization for new certificates [${CA_CERT_O}]: "
     read -r CERT_O
     if [ -n "${CERT_O}" ]; then
         CA_CERT_O=${CERT_O}
     fi
 
-    echo -e -n "$INPUT Default org unit for new certificates [${CA_CERT_OU}]: "
+    echo -e -n "$INPUT Default organization unit for new certificates [${CA_CERT_OU}]: "
     read -r CERT_OU
     if [ -n "${CERT_OU}" ]; then
         CA_CERT_OU=${CERT_OU}

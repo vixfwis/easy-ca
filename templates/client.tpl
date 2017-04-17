@@ -7,6 +7,7 @@ utf8                    = yes                   # Input is UTF-8
 string_mask             = utf8only              # Emit UTF-8 strings
 prompt                  = yes                   # Prompt for DN
 distinguished_name      = client_dn             # DN template
+# extensions are set by CA
 req_extensions          = client_reqext         # Desired extensions
 
 [ client_dn ]
@@ -26,9 +27,9 @@ commonName_default              = {{CA_USERNAME}}
 emailAddress                    = "7. Email Address (name@fqdn)"
 emailAddress_max                = 40
 
-[ client_reqext ]
-keyUsage                = critical,digitalSignature
-basicConstraints        = critical,CA:false
-extendedKeyUsage        = critical,clientAuth
-subjectKeyIdentifier    = hash
-subjectAltName          = email:move
+#[ client_reqext ]
+#keyUsage                = critical,digitalSignature
+#basicConstraints        = critical,CA:false
+#extendedKeyUsage        = critical,clientAuth
+#subjectKeyIdentifier    = hash
+#subjectAltName          = email:move
