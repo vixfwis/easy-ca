@@ -105,7 +105,7 @@ openssl ca -gencrl \
 
 echo -e "$NOTE Printing new CRL"
 
-openssl crl -in ca/ca.crl -noout -text
+openssl crl -in crl/ca.crl -noout -text
 
 popd > /dev/null
 
