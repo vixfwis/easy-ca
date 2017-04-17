@@ -50,6 +50,12 @@ export SAN=""
 export CA_USERNAME="${CLIENT_NAME}"
 template "${BIN_DIR}/templates/client.tpl" "conf/${SAFE_NAME}.client.conf"
 
+echo
+echo -e -n "$INPUT Enter passphase for signing CA key: "
+read -r -s PASS
+echo
+export CA_PASS="${PASS}"
+
 echo -e "$NOTE Creating the client key and csr"
 
 # Create the client key and csr
@@ -58,12 +64,6 @@ openssl req -new -nodes \
             -keyout "private/${SAFE_NAME}.client.key" \
             -out "csr/${SAFE_NAME}.client.csr"
 chmod 0400 "private/${SAFE_NAME}.client.key"
-
-echo
-echo -e -n "$INPUT Enter passphase for signing CA key: "
-read -r -s PASS
-echo
-export CA_PASS="${PASS}"
 
 echo -e "$NOTE Creating the client certificate"
 
