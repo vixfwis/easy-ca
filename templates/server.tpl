@@ -27,6 +27,6 @@ commonName_default              = {{CA_HOSTNAME}}
 
 [ server_reqext ]
 keyUsage                = critical,digitalSignature,keyEncipherment
-extendedKeyUsage        = serverAuth,clientAuth
+extendedKeyUsage        = critical,serverAuth,clientAuth
 subjectKeyIdentifier    = hash
 subjectAltName          = $ENV::SAN

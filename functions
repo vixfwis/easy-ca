@@ -4,7 +4,7 @@
 set -eu
 
 # Binaries copied during install
-BINARIES="
+BINARIES_ROOT="
 create-signing-ca
 create-server
 create-client
@@ -12,11 +12,25 @@ revoke-cert
 functions
 "
 
-TEMPLATES="
+TEMPLATES_ROOT="
 client.tpl
 server.tpl
 signing.tpl
 "
+
+BINARIES_SIGN="
+create-server
+create-client
+revoke-cert
+functions
+"
+
+TEMPLATES_SIGN="
+client.tpl
+server.tpl
+"
+
+# Output highlighting
 
 NOTE="\033[34;1m[*]\033[0m"
 SUCC="\033[32;1m[!]\033[0m"

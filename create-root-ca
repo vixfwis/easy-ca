@@ -97,13 +97,17 @@ openssl ca -gencrl -batch \
            -out crl/ca.crl \
            -passin env:CA_PASS
 
+echo -e "$NOTE Creating the chain bundle"
+
+ln -s ca/ca.crt ca/chain.pem
+
 echo -e "$NOTE Copying toolchain (symlinking)"
 
-for BIN in ${BINARIES}; do
+for BIN in ${BINARIES_ROOT}; do
     ln -s "${BIN_DIR}"/"${BIN}" bin/
 done
 mkdir bin/templates/
-for TPL in ${TEMPLATES}; do
+for TPL in ${TEMPLATES_ROOT}; do
     ln -s "${BIN_DIR}"/templates/"${TPL}" bin/templates/
 done
 

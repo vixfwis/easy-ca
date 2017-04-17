@@ -120,11 +120,11 @@ cat ca/ca.crt >> ca/chain.pem
 echo -e "$NOTE Copying toolchain (symlinking)"
 
 # Replicate the existing binary directory
-for BIN in ${BINARIES}; do
+for BIN in ${BINARIES_SIGN}; do
     ln -s "${BIN_DIR}"/"${BIN}" bin/
 done
 mkdir bin/templates/
-for TPL in ${TEMPLATES}; do
+for TPL in ${TEMPLATES_SIGN}; do
     ln -s "${BIN_DIR}"/templates/"${TPL}" bin/templates/
 done
 

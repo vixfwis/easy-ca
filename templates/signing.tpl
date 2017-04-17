@@ -77,8 +77,8 @@ commonName              = supplied              # Must be present
 # Extensions for signing certs issued by this signing CA
 [ server_ext ]
 keyUsage                = critical,digitalSignature,keyEncipherment
-basicConstraints        = CA:false
-extendedKeyUsage        = serverAuth,clientAuth
+basicConstraints        = critical,CA:false
+extendedKeyUsage        = critical,serverAuth,clientAuth
 subjectKeyIdentifier    = hash
 authorityKeyIdentifier  = keyid:always
 authorityInfoAccess     = @issuer_info
@@ -86,8 +86,8 @@ crlDistributionPoints   = @crl_info
 
 [ client_ext ]
 keyUsage                = critical,digitalSignature
-basicConstraints        = CA:false
-extendedKeyUsage        = clientAuth
+basicConstraints        = critical,CA:false
+extendedKeyUsage        = critical,clientAuth
 subjectKeyIdentifier    = hash
 authorityKeyIdentifier  = keyid:always
 authorityInfoAccess     = @issuer_info
