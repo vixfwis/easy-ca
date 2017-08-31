@@ -52,9 +52,9 @@ fi
 # Sanitize the commonName to make it suitable for use in filenames
 SAFE_NAME=$(echo "${SERVER_NAME}" | sed 's/\*/star/g' | sed 's/[^A-Za-z0-9-]/-/g')
 
-echo -e "$SUCC Creating new SSL server certificate for:"
-echo -e "$SUCC commonName       ${SERVER_NAME}"
-echo -e "$SUCC subjectAltName   ${ALT_NAME}"
+echo -e "$NOTE Creating new SSL server certificate for:"
+echo -e "$NOTE commonName       ${SERVER_NAME}"
+echo -e "$NOTE subjectAltName   ${ALT_NAME}"
 
 pushd "${BIN_DIR}/.." > /dev/null
 

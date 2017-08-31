@@ -36,7 +36,7 @@ fi
 
 SAFE_NAME=$(echo "${CLIENT_NAME}" | sed 's/\*/star/g' | sed 's/[^A-Za-z0-9-]/-/g')
 
-echo -e "$SUCC Creating new client certificate for '${CLIENT_NAME}'"
+echo -e "$NOTE Creating new client certificate for '${CLIENT_NAME}'"
 
 pushd "${BIN_DIR}/.." > /dev/null
 
