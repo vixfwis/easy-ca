@@ -34,7 +34,7 @@ elif [ "${CLIENT_NAME}" = "" ]; then
     echo -e -n "$SUCC " && usage
 fi
 
-SAFE_NAME=$(echo "$CLIENT_NAME" | sed 's/\*/star/g' | sed 's/[^A-Za-z0-9-]/-/g')
+SAFE_NAME=$(echo "${CLIENT_NAME}" | sed 's/\*/star/g' | sed 's/[^A-Za-z0-9-]/-/g')
 
 echo -e "$SUCC Creating new client certificate for '${CLIENT_NAME}'"
 
@@ -45,16 +45,21 @@ if [ -f "conf/${SAFE_NAME}.client.conf" ]; then
     exit 1
 fi
 
-# Generate the client cert openssl config
-export SAN=""
-export CA_USERNAME="${CLIENT_NAME}"
-template "${BIN_DIR}/templates/client.tpl" "conf/${SAFE_NAME}.client.conf"
+trap 'rm -f conf/"${SAFE_NAME}".client.conf private/${SAFE_NAME}.client.key certs/${SAFE_NAME}.client.crt' 0
 
 echo
 echo -e -n "$INPUT Enter passphase for signing CA key: "
 read -r -s PASS
 echo
 export CA_PASS="${PASS}"
+openssl rsa -check \
+            -in ca/private/ca.key \
+            -passin env:CA_PASS
+
+# Generate the client cert openssl config
+export SAN=""
+export CA_USERNAME="${CLIENT_NAME}"
+template "${BIN_DIR}/templates/client.tpl" "conf/${SAFE_NAME}.client.conf"
 
 echo -e "$NOTE Creating the client key and csr"
 
@@ -82,5 +87,7 @@ openssl verify -CAfile ca/chain.pem "certs/${SAFE_NAME}.client.crt"
 popd > /dev/null
 
 unset CA_PASS
+
+trap 0
 
 echo -e "$SUCC Client certificate for '${CLIENT_NAME}' created."

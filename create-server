@@ -56,23 +56,28 @@ echo -e "$SUCC Creating new SSL server certificate for:"
 echo -e "$SUCC commonName       ${SERVER_NAME}"
 echo -e "$SUCC subjectAltName   ${ALT_NAME}"
 
-pushd "${BIN_DIR}"/.. > /dev/null
+pushd "${BIN_DIR}/.." > /dev/null
 
 if [ -f conf/"${SAFE_NAME}".server.conf ]; then
     echo -e "$ERR Configuration already exists for '${SERVER_NAME}', exiting."
     exit 1
 fi
 
-# Generate the server openssl config
-export CA_HOSTNAME="${SERVER_NAME}"
-export SAN="${ALT_NAME}"
-template "${BIN_DIR}/templates/server.tpl" "conf/${SAFE_NAME}.server.conf"
+trap 'rm -f conf/"${SAFE_NAME}".server.conf private/${SAFE_NAME}.server.key certs/${SAFE_NAME}.server.crt' 0
 
 echo
 echo -e -n "$INPUT Enter passphase for signing CA key: "
 read -r -s PASS
 echo
 export CA_PASS="${PASS}"
+openssl rsa -check \
+            -in ca/private/ca.key \
+            -passin env:CA_PASS
+
+# Generate the server openssl config
+export CA_HOSTNAME="${SERVER_NAME}"
+export SAN="${ALT_NAME}"
+template "${BIN_DIR}/templates/server.tpl" "conf/${SAFE_NAME}.server.conf"
 
 echo -e "$NOTE Creating the server key and csr"
 
@@ -98,5 +103,7 @@ openssl verify -CAfile ca/chain.pem "certs/${SAFE_NAME}.server.crt"
 popd > /dev/null
 
 unset CA_PASS
+
+trap 0
 
 echo -e "$SUCC Server certificate for '${SERVER_NAME}' created."
