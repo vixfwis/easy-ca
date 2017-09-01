@@ -37,6 +37,7 @@ script:
       signCA_password
       rootCA_password
       EOF
+  - bash --posix ./bin/show-status
   - cd travis-signing/
   - |
       bash --posix ./bin/create-server -s travis-server.bogus.com -a www.travis-server.bogus.com << EOF
@@ -71,3 +72,4 @@ script:
       y
       signCA_password
       EOF
+  - bash --posix ./bin/show-status

@@ -1,0 +1,143 @@
+#!/bin/bash
+
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+# Christian Göttsche <cgzones@googlemail.com>
+
+set -eu
+set -o pipefail
+
+umask 0077
+
+BIN_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+source "${BIN_DIR}/functions"
+source "${BIN_DIR}/defaults.conf"
+
+ROOT_DIR="$(realpath -e "${BIN_DIR}/..")"
+#ROOT_DIR="$(pwd)"
+
+# check directory structure
+
+if [ ! -d archive ]; then
+    echo -e "$ERR No 'archives' directory!'";
+    exit 2
+fi
+
+if [ ! -d ca ]; then
+    echo -e "$ERR No 'ca' directory!'";
+    exit 2
+fi
+
+if [ ! -d ca/db ]; then
+    echo -e "$ERR No 'ca/db' directory!'";
+    exit 2
+fi
+
+if [ ! -d ca/private ]; then
+    echo -e "$ERR No 'ca/private' directory!'";
+    exit 2
+fi
+
+if [ ! -d certs ]; then
+    echo -e "$ERR No 'certs' directory!'";
+    exit 2
+fi
+
+if [ ! -d conf ]; then
+    echo -e "$ERR No 'conf' directory!'";
+    exit 2
+fi
+
+if [ ! -d crl ]; then
+    echo -e "$ERR No 'crl' directory!'";
+    exit 2
+fi
+
+if [ ! -d csr ]; then
+    echo -e "$ERR No 'csr' directory!'";
+    exit 2
+fi
+
+if [ ! -d private ]; then
+    echo -e "$ERR No 'private' directory!'";
+    exit 2
+fi
+
+CA_CRT="$ROOT_DIR/ca/ca.crt"
+
+echo -e "$NOTE Checking direcory $ROOT_DIR  ..."
+
+if openssl verify -CAfile "$CA_CRT" "$CA_CRT" >/dev/null 2>&1; then
+    echo -e "$SUCC RootCA directory (found self-signed CA)"
+
+    if [ ! -f "$ROOT_DIR/archive/01.pem" ] || ! cmp "$CA_CRT" "$ROOT_DIR/archive/01.pem" >/dev/null; then
+        echo -e "$ERR Main certificate does not match first archiv entry!"
+        exit 2
+    fi
+
+    rootCA=1 #signes itself
+else
+    echo -e "$SUCC SignCA directory (found signed CA)"
+    rootCA=0
+fi
+
+cert_txt=$(openssl x509 -noout -in "$CA_CRT" -text)
+
+echo -e "$NOTE     Name                        $CA_NAME"
+echo -e "$NOTE     Domain                      $CA_DOMAIN"
+subject=$(openssl x509 -noout -in "$CA_CRT" -subject) # ignore subject=
+echo -e "$NOTE     Subject                     ${subject:8}"
+if [ ! $rootCA -eq 0 ]; then
+    issuer=$(openssl x509 -noout -in "$CA_CRT" -issuer) # ignore issuer=
+    echo -e "$NOTE     Issuer                      ${issuer:7}"
+fi
+echo -e "$NOTE     Bits                        $(echo "$cert_txt" | grep 'Public-Key:' | cut -d ':' -f2 | tr -d "()")"
+
+certs=$(($(cat "$ROOT_DIR/ca/db/crt.srl") - rootCA - 1))
+echo -e "$NOTE     Signed Ceritificates       " $certs
+if [ $certs -gt 0 ]; then
+    skip=$rootCA
+    num=1
+    while read -r line; do
+        if [ $skip -eq 1 ]; then
+            skip=0
+        else
+
+            if [[ "$line" == "V"* ]]; then
+                ca_number=$(echo "$line" | tr -s ' \t' ' ' | cut -d ' ' -f 3)
+                revoked="        "
+            else
+                ca_number=$(echo "$line" | tr -s ' \t' ' ' | cut -d ' ' -f 4)
+                revoked="revoked!"
+            fi
+
+            server_cert=$(openssl x509 -in "$ROOT_DIR/archive/$ca_number.pem" -noout -text | grep -c 'TLS Web Server Authentication') || true
+
+
+            if [ "$server_cert" -eq 1 ]; then
+                str="server certificate"
+            else
+                str="client certificate"
+            fi
+            echo -e "$NOTE         $revoked     $str        $line"
+        fi
+        num=$((num+1))
+    done < "$ROOT_DIR/ca/db/certificate.db"
+fi
+revoked_lists=$(($(cat "$ROOT_DIR/ca/db/crl.srl") - rootCA - 1))
+echo -e "$NOTE     Revoke Ceritificates Lists "  $revoked_lists
+
+if ! openssl crl -in "$ROOT_DIR/crl/ca.crl" -CAfile "$CA_CRT" >/dev/null 2>&1; then
+    echo -e "$ERR Certificate revocation list not valid!"
+    exit 2
+fi
+
+if [ $(openssl crl -in "$ROOT_DIR/crl/ca.crl" -text -noout | grep -c 'No Revoked Certificates.') -eq 1 ]; then
+    revoked_certs=0
+else
+    revoked_certs=$(openssl crl -in "$ROOT_DIR/crl/ca.crl" -text -noout | grep -c 'Revocation Date: ')
+fi
+echo -e "$NOTE     Revoked Certificates        $revoked_certs"
+

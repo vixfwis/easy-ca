@@ -1,11 +1,17 @@
 #!/bin/bash
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
 # Derek Moore <derek.moore@gmail.com>
+# Christian Göttsche <cgzones@googlemail.com>
 
 set -eu
+set -o pipefail
 
 umask 0077
 
-BIN_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+BIN_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "${BIN_DIR}/functions"
 source "${BIN_DIR}/defaults.conf"
 
