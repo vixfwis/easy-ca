@@ -1,6 +1,10 @@
 # easy-ca
 OpenSSL wrapper scripts for managing basic CA functions
 
+[![Test CI Status](https://travis-ci.org/cgzones/easy-ca.svg?branch=develop)](https://travis-ci.org/cgzones/easy-ca)
+[![GitHub License](https://img.shields.io/badge/License-MPL%202.0-brightgreen.svg)](https://raw.githubusercontent.com/cgzones/easy-ca/master/LICENSE)
+
+
 A suite of bash scripts for automating very basic OpenSSL Certificate Authority operations:
 * Creating Root CAs
 * Creating Intermediate Signing CAs
@@ -20,12 +24,12 @@ The **create-root-ca** script will initialize a new Root CA directory structure.
 create-root-ca -d $ROOT_CA_DIR
 ```
 
-**create-root-ca** will prompt for the basic DN configuration to use as defaults for this CA. Optionally, you can edit *defaults.conf* to set this information in advance. The new CA is now ready for use. The CA key, certificate, and CRL are available for review:
+**create-root-ca** will prompt for the basic DN configuration to use as defaults for this CA. Optionally, you can edit *defaults.conf* to set this information in advance. The new CA is now ready for use. The CA certificate, key and CRL are available for review:
 
 ```
 $ROOT_CA_DIR/ca/ca.crt
 $ROOT_CA_DIR/private/ca.key
-$ROOT_CA_DIR/crl/ca.crl
+$ROOT_CA_DIR/crl/ca.crlkey
 ```
 
 
@@ -110,13 +114,20 @@ $CA_DIR/crl/ca.crl
 ## Caveats
 
 These scripts are very simple, and make some hard-coded assumptions about behavior and configuration:
-* Root and Intermediate CAs have a 3652-day lifetime
-* Root and Intermediate CAs have 4096-bit RSA keys
+* Root and Intermediate CAs have a 3652-day lifetime (configurable in *templates/(root|signing).tpl*)
+* Root and Intermediate CAs have 4096-bit RSA keys (configurable in *defaults.conf*)
 * Root and Intermediate CA keys are always encrypted
 * Only one level of Intermediate CA is supported
-* Client and Server certificates have a 730-day lifetime
-* Client and Server certificates have 2048-bit RSA keys
-* Client and Server keys are never encrypted
-* There is no wrapper for renewing certificates
+* Client and Server certificates have a 730-day lifetime (configurable in *templates/(server|client).tpl*)
+* Client and Server certificates have 2048-bit RSA keys (configurable in *defaults.conf*)
+* Client and Server keys are not encrypted
+* There is no wrapper *yet* for renewing certificates
+* The tool chain is currently for developing symlinked, **not** copied
 
 
+
+## License
+
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at http://mozilla.org/MPL/2.0/.
