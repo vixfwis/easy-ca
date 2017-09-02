@@ -15,7 +15,7 @@ BIN_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "${BIN_DIR}/functions"
 source "${BIN_DIR}/defaults.conf"
 
-ROOT_DIR="$(realpath -e "${BIN_DIR}/..")"
+ROOT_DIR="$(readlink -e "${BIN_DIR}/..")"
 #ROOT_DIR="$(pwd)"
 
 # check directory structure
