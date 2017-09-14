@@ -16,7 +16,6 @@ source "${BIN_DIR}/functions"
 source "${BIN_DIR}/defaults.conf"
 
 ROOT_DIR="$(readlink -e "${BIN_DIR}/..")"
-#ROOT_DIR="$(pwd)"
 
 # check directory structure
 
