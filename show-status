@@ -92,10 +92,12 @@ if [ ! $rootCA -eq 0 ]; then
     issuer=$(openssl x509 -noout -in "$CA_CRT" -issuer) # ignore issuer=
     echo -e "$NOTE     Issuer                      ${issuer:7}"
 fi
+echo -e "$NOTE     Valid until                $(echo "$cert_txt" | grep 'Not After :' | cut -d ':' -f2-)"
+
 echo -e "$NOTE     Bits                       $(echo "$cert_txt" | grep 'Public-Key:' | cut -d ':' -f2 | tr -d "()")"
 
 certs=$(($(cat "$ROOT_DIR/ca/db/crt.srl") - rootCA - 1))
-echo -e "$NOTE     Signed Ceritificates       " $certs
+echo -e "$NOTE     Signed Certificates        " $certs
 if [ $certs -gt 0 ]; then
     skip=$rootCA
     num=1
@@ -106,7 +108,7 @@ if [ $certs -gt 0 ]; then
 
             if [[ "$line" == "V"* ]]; then
                 ca_number=$(echo "$line" | tr -s ' \t' ' ' | cut -d ' ' -f 3)
-                revoked="        "
+                revoked="valid   "
             else
                 ca_number=$(echo "$line" | tr -s ' \t' ' ' | cut -d ' ' -f 4)
                 revoked="revoked!"
@@ -114,22 +116,23 @@ if [ $certs -gt 0 ]; then
 
             server_cert=$(openssl x509 -in "$ROOT_DIR/archive/$ca_number.pem" -noout -text | grep -c 'TLS Web Server Authentication') || true
             sign_cert=$(openssl x509 -in "$ROOT_DIR/archive/$ca_number.pem" -noout -text | grep -c 'Certificate Sign') || true
+            valid_until=$(openssl x509 -in "$ROOT_DIR/archive/$ca_number.pem" -noout -text | grep 'Not After :' | cut -d ':' -f2-)
 
 
             if [ "$server_cert" -eq 1 ]; then
-                str="server certificate "
+                str="server cert "
             elif [ "$sign_cert" -eq 1 ]; then
-                str="signing certificate"
+                str="signing cert"
             else
-                str="client certificate "
+                str="client cert "
             fi
-            echo -e "$NOTE         $revoked     $str        $line"
+            echo -e "$NOTE      $valid_until :: $revoked :: $str :: $line"
         fi
         num=$((num+1))
     done < "$ROOT_DIR/ca/db/certificate.db"
 fi
 revoked_lists=$(($(cat "$ROOT_DIR/ca/db/crl.srl") - rootCA - 1))
-echo -e "$NOTE     Revoke Ceritificates Lists "  $revoked_lists
+echo -e "$NOTE     Revoke Certificates Lists  "  $revoked_lists
 
 if ! openssl crl -in "$ROOT_DIR/crl/ca.crl" -CAfile "$CA_CRT" >/dev/null 2>&1; then
     echo -e "$ERR Certificate revocation list not valid!"
