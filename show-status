@@ -114,12 +114,15 @@ if [ $certs -gt 0 ]; then
             fi
 
             server_cert=$(openssl x509 -in "$ROOT_DIR/archive/$ca_number.pem" -noout -text | grep -c 'TLS Web Server Authentication') || true
+            sign_cert=$(openssl x509 -in "$ROOT_DIR/archive/$ca_number.pem" -noout -text | grep -c 'Certificate Sign') || true
 
 
             if [ "$server_cert" -eq 1 ]; then
-                str="server certificate"
+                str="server certificate "
+            elif [ "$sign_cert" -eq 1 ]; then
+                str="signing certificate"
             else
-                str="client certificate"
+                str="client certificate "
             fi
             echo -e "$NOTE         $revoked     $str        $line"
         fi
