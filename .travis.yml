@@ -24,6 +24,33 @@ script:
       EOF
   - cd travis-ca/
   - |
+      bash --posix ./bin/create-server -s travis-server.bogus.com -a www.travis-server.bogus.com << EOF
+      rootCA_password
+      US
+      California
+      San Francisco
+      Bogus Inc.
+      Jurisdiction of travis-server.bogus-com
+      travis-server.bogus.com
+      EOF
+  - |
+      bash --posix ./bin/create-client -c travis-client << EOF
+      rootCA_password
+      US
+      California
+      San Francisco
+      Bogus Inc.
+      private
+      travis-client
+      travis-client@bogus.com
+      EOF
+  - |
+      bash --posix ./bin/revoke-cert -c certs/travis-server-bogus-com.server.crt << EOF
+      1
+      y
+      rootCA_password
+      EOF
+  - |
       bash --posix ./bin/create-signing-ca -d travis-signing << EOF
       travis-signing
       bogus.com

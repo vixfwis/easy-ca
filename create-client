@@ -26,6 +26,11 @@ usage() {
     exit 2
 }
 
+if [ ! -f ca/ca.crt ]; then
+    echo -e "$ERR Must be run inside a CA directory!"
+    exit 2
+fi
+
 CLIENT_NAME=
 
 while getopts c: FLAG; do
@@ -52,7 +57,7 @@ if [ -f "conf/${SAFE_NAME}.client.conf" ]; then
     exit 1
 fi
 
-trap 'rm -f conf/"${SAFE_NAME}".client.conf private/${SAFE_NAME}.client.key certs/${SAFE_NAME}.client.crt' 0
+trap 'rm -f "conf/${SAFE_NAME}.client.conf" "private/${SAFE_NAME}.client.key" "certs/${SAFE_NAME}.client.crt"' 0
 
 echo
 echo -e -n "$INPUT Enter passphase for signing CA key: "

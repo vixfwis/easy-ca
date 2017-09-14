@@ -45,6 +45,7 @@ CA_NAME="$( basename "${CA_DIR}" )"
 echo -e "$NOTE Creating root CA in dir '${CA_DIR}'"
 
 init_ca_home "${CA_DIR}"
+trap 'rm -Rf "${CA_DIR}"' 0
 generate_conf "${CA_DIR}/bin/defaults.conf"
 source "${CA_DIR}/bin/defaults.conf"
 
@@ -64,7 +65,7 @@ read -r -s PASS2
 echo
 
 if [[ "${PASS1}" != "${PASS2}" ]]; then
-    echo "$ERR Passphrases did not match, exiting."
+    echo -e "$ERR Passphrases did not match, exiting."
     exit 1
 fi
 export CA_PASS="${PASS1}"
@@ -99,6 +100,10 @@ openssl ca -selfsign -batch -notext \
            -extensions root_ca_ext \
            -passin env:CA_PASS
 
+echo -e "$NOTE Creating pseaudo CA chain"
+
+ln -s ca.crt ca/chain.pem
+
 echo -e "$NOTE Creating the root CA CRL"
 
 openssl ca -gencrl -batch \
@@ -119,5 +124,7 @@ done
 popd > /dev/null
 
 unset CA_PASS
+
+trap 0
 
 echo -e "$SUCC Root CA initialized."

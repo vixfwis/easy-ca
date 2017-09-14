@@ -18,12 +18,17 @@ source "${BIN_DIR}/defaults.conf"
 usage() {
     echo "Usage: $0 -d CA_DIR"
     echo "Initializes a new signing sub-CA in CA_DIR"
+    echo "Must be run inside a root CA dir"
     echo
     echo "Options:"
     echo "    -d CA_DIR  Target directory to be created and initialized"
     echo
     exit 2
 }
+
+if ! openssl verify -CAfile ca/ca.crt ca/ca.crt >/dev/null 2>&1; then
+    echo -e -n "$ERR " && usage
+fi
 
 CA_DIR=
 
@@ -49,7 +54,7 @@ echo -e "$NOTE Creating new signing sub-CA in '${CA_DIR}'"
 echo
 
 init_ca_home "${CA_DIR}"
-trap 'rm -Rf ${CA_DIR}' 0
+trap 'rm -Rf "${CA_DIR}"' 0
 generate_conf "${CA_DIR}/bin/defaults.conf"
 source "${CA_DIR}/bin/defaults.conf"
 

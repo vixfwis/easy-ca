@@ -26,6 +26,11 @@ usage() {
     exit 2
 }
 
+if [ ! -f ca/ca.crt ]; then
+    echo -e "$ERR Must be run inside a CA directory!"
+    exit 2
+fi
+
 SERVER_NAME=
 ALT_NAME=
 
@@ -69,7 +74,7 @@ if [ -f conf/"${SAFE_NAME}".server.conf ]; then
     exit 1
 fi
 
-trap 'rm -f conf/"${SAFE_NAME}".server.conf private/${SAFE_NAME}.server.key certs/${SAFE_NAME}.server.crt' 0
+trap 'rm -f "conf/${SAFE_NAME}.server.conf" "private/${SAFE_NAME}.server.key" "certs/${SAFE_NAME}.server.crt"' 0
 
 echo
 echo -e -n "$INPUT Enter passphase for signing CA key: "

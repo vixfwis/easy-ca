@@ -92,7 +92,7 @@ if [ ! $rootCA -eq 0 ]; then
     issuer=$(openssl x509 -noout -in "$CA_CRT" -issuer) # ignore issuer=
     echo -e "$NOTE     Issuer                      ${issuer:7}"
 fi
-echo -e "$NOTE     Bits                        $(echo "$cert_txt" | grep 'Public-Key:' | cut -d ':' -f2 | tr -d "()")"
+echo -e "$NOTE     Bits                       $(echo "$cert_txt" | grep 'Public-Key:' | cut -d ':' -f2 | tr -d "()")"
 
 certs=$(($(cat "$ROOT_DIR/ca/db/crt.srl") - rootCA - 1))
 echo -e "$NOTE     Signed Ceritificates       " $certs
