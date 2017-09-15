@@ -17,12 +17,15 @@ create-client
 revoke-cert
 functions
 show-status
+gen-html
 "
 
 TEMPLATES_ROOT="
 client.tpl
 server.tpl
 signing.tpl
+root_index.tpl
+sign_index.tpl
 "
 
 BINARIES_SIGN="
@@ -31,11 +34,13 @@ create-client
 revoke-cert
 functions
 show-status
+gen-html
 "
 
 TEMPLATES_SIGN="
 client.tpl
 server.tpl
+sign_index.tpl
 "
 
 # Output highlighting

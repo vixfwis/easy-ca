@@ -100,9 +100,8 @@ openssl ca -selfsign -batch -notext \
            -extensions root_ca_ext \
            -passin env:CA_PASS
 
-echo -e "$NOTE Creating pseaudo CA chain"
-
 ln -s ca.crt ca/chain.pem
+ln -s ca.crt ca/root.crt
 
 echo -e "$NOTE Creating the root CA CRL"
 

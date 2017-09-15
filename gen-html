@@ -1,0 +1,97 @@
+#!/bin/bash
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+# Derek Moore <derek.moore@gmail.com>
+# Christian Göttsche <cgzones@googlemail.com>
+
+set -eu
+set -o pipefail
+
+umask 0077
+
+BIN_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+source "${BIN_DIR}/functions"
+source "${BIN_DIR}/defaults.conf"
+
+usage() {
+    echo "Usage: $0"
+    echo "    Create a shareable html directory, containing root and signing"
+    echo "    certificates as well as the certificate revokation list"
+    echo
+    echo "Options:"
+    echo "    -f       Override existing html directory"
+    exit 2
+}
+
+if [ ! -f ca/ca.crt ]; then
+    echo -e "$ERR Must be run inside a CA directory!"
+    exit 2
+fi
+
+FORCE=0
+
+while getopts hf FLAG; do
+    case $FLAG in
+        h) echo -e -n "$SUCC " && usage ;;
+        f) FORCE=1 ;;
+        *) echo -e -n "$ERR " && usage ;;
+        #xy) VAR=${OPTARG} ;;
+    esac
+done
+
+if [ -d html ]; then
+    if [ $FORCE -ne 1 ]; then
+        echo "Html directory exists already!"
+        echo "Specify -f to override"
+        exit 2
+    fi
+
+    rm -Rf html/ca/
+    rmdir html
+fi
+
+echo -e "$NOTE Creating directory structure"
+
+mkdir html/
+mkdir html/ca/
+
+if openssl verify -CAfile ca/ca.crt ca/ca.crt >/dev/null 2>&1; then
+    echo -e "$NOTE Creating index.html for root CA"
+
+    export CA_HTML_ROOT_TITLE=$(openssl x509 -noout -subject -in ca/ca.crt -nameopt multiline | grep commonName | cut -d "=" -f 2-)
+    export CA_HTML_ROOT_NAME=$(echo $CA_HTML_ROOT_TITLE | sed 's/\s\+/_/g')
+    export CA_HTML_ROOT_HASH=$(openssl x509 -noout -fingerprint -sha1 -in ca/ca.crt | cut -d '=' -f 2-)
+
+
+    template "${BIN_DIR}/templates/root_index.tpl" "html/ca/index.html"
+
+    echo -e "$NOTE Copying certs"
+
+    cp ca/ca.crt "html/ca/${CA_HTML_ROOT_NAME}.crt"
+    cp crl/ca.crl "html/ca/${CA_HTML_ROOT_NAME}.crl"
+
+    echo -e "$SUCC html directory successfully created"
+else
+    echo -e "$NOTE Creating index.html for sign CA"
+
+    export CA_HTML_ROOT_TITLE=$(openssl x509 -noout -subject -in ca/root.crt -nameopt multiline | grep commonName | cut -d "=" -f 2-)
+    export CA_HTML_ROOT_NAME=$(echo $CA_HTML_ROOT_TITLE | sed 's/\s\+/_/g')
+    export CA_HTML_ROOT_HASH=$(openssl x509 -noout -fingerprint -sha1 -in ca/root.crt | cut -d '=' -f 2-)
+
+    export CA_HTML_SIGN_TITLE=$(openssl x509 -noout -subject -in ca/ca.crt -nameopt multiline | grep commonName | cut -d "=" -f 2-)
+    export CA_HTML_SIGN_NAME=$(echo $CA_HTML_SIGN_TITLE | sed 's/\s\+/_/g')
+    export CA_HTML_SIGN_HASH=$(openssl x509 -noout -fingerprint -sha1 -in ca/ca.crt | cut -d '=' -f 2-)
+
+
+    template "${BIN_DIR}/templates/sign_index.tpl" "html/ca/index.html"
+
+    echo -e "$NOTE Copying certs"
+
+    cp ca/root.crt "html/ca/${CA_HTML_ROOT_NAME}.crt"
+    cp ca/ca.crt "html/ca/${CA_HTML_SIGN_NAME}.crt"
+    cp crl/ca.crl "html/ca/${CA_HTML_SIGN_NAME}.crl"
+
+    echo -e "$SUCC html directory successfully created"
+fi

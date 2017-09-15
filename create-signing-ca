@@ -129,12 +129,10 @@ openssl ca -gencrl -batch \
 
 echo -e "$NOTE Creating the chain bundle"
 
-if [ -f "${PARENT}/ca/chain.pem" ]; then
-    cat "${PARENT}/ca/chain.pem" > ca/chain.pem
-else
-    cat "${PARENT}/ca/ca.crt" > ca/chain.pem
-fi
+cat "${PARENT}/ca/chain.pem" > ca/chain.pem
 cat ca/ca.crt >> ca/chain.pem
+
+cp "${PARENT}/ca/ca.crt" ca/root.crt
 
 echo -e "$NOTE Verifying trusted chain"
 
