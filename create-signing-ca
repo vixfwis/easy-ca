@@ -53,6 +53,15 @@ echo
 echo -e "$NOTE Creating new signing sub-CA in '${CA_DIR}'"
 echo
 
+echo -e -n "$INPUT Enter passphase for root CA key: "
+read -r -s PARENT_PASS
+echo
+export CA_PARENT_PASS="${PARENT_PASS}"
+openssl rsa -check \
+            -in ca/private/ca.key \
+            -passin env:CA_PARENT_PASS \
+            -noout
+
 init_ca_home "${CA_DIR}"
 trap 'rm -Rf "${CA_DIR}"' 0
 generate_conf "${CA_DIR}/bin/defaults.conf"
@@ -77,18 +86,12 @@ if [ "${PASS1}" != "${PASS2}" ]; then
     echo -e "$ERR Passphrases did not match, exiting."
     exit 1
 fi
+if [[ ${#PASS1} -lt 4 ]]; then
+    echo -e "$ERR Passphrase is too short, please use at least 4 characters!"
+    exit 1
+fi
 export CA_PASS"=${PASS1}"
 export SAN=""
-
-echo
-
-echo -e -n "$INPUT Enter passphase for root CA key: "
-read -r -s PARENT_PASS
-echo
-export CA_PARENT_PASS="${PARENT_PASS}"
-openssl rsa -check \
-            -in ca/private/ca.key \
-	    -passin env:CA_PARENT_PASS
 
 pushd "${CA_DIR}" > /dev/null
 

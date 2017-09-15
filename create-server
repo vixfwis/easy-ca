@@ -83,7 +83,8 @@ echo
 export CA_PASS="${PASS}"
 openssl rsa -check \
             -in ca/private/ca.key \
-            -passin env:CA_PASS
+            -passin env:CA_PASS \
+            -noout
 
 # Generate the server openssl config
 export CA_HOSTNAME="${SERVER_NAME}"

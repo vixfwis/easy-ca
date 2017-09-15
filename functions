@@ -6,9 +6,6 @@
 # Derek Moore <derek@ripple.com>
 # Christian Göttsche <cgzones@googlemail.com>
 
-set -eu
-set -o pipefail
-
 # Binaries copied during install
 BINARIES_ROOT="
 create-signing-ca
@@ -98,10 +95,10 @@ init_ca_home() {
 
     # Create top-level CA structure
     mkdir ca
+    mkdir ca/archive
     mkdir ca/db
     mkdir ca/private
 
-    mkdir archive
     mkdir bin
     mkdir certs
     mkdir crl

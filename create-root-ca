@@ -22,22 +22,22 @@ usage() {
     echo "Options:"
     echo "    -d CA_DIR  Target directory to be created and initialized"
     echo
-    exit 2
 }
 
 CA_DIR=
 
-while getopts "d:" FLAG; do
+while getopts "d:h" FLAG; do
     case $FLAG in
         d) CA_DIR=${OPTARG} ;;
-        *) echo -e -n "$ERR " && usage ;;
+        h) echo -e -n "$SUCC " && usage && exit 0;;
+        *) echo -e -n "$ERR " && usage && exit 2;;
     esac
 done
 
 if [ $OPTIND -le $# ]; then
-    echo -e -n "$ERR " && usage
+    echo -e -n "$ERR " && usage && exit 2
 elif [[ "${CA_DIR}" = "" ]]; then
-    echo -e -n "$SUCC " && usage
+    echo -e -n "$SUCC " && usage && exit 1
 fi
 
 CA_NAME="$( basename "${CA_DIR}" )"
@@ -68,6 +68,11 @@ if [[ "${PASS1}" != "${PASS2}" ]]; then
     echo -e "$ERR Passphrases did not match, exiting."
     exit 1
 fi
+if [[ ${#PASS1} -lt 4 ]]; then
+    echo -e "$ERR Passphrase is too short, please use at least 4 characters!"
+    exit 1
+fi
+
 export CA_PASS="${PASS1}"
 export SAN=""
 

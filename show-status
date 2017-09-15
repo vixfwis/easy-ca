@@ -19,13 +19,13 @@ ROOT_DIR="$(readlink -e "${BIN_DIR}/..")"
 
 # check directory structure
 
-if [ ! -d archive ]; then
-    echo -e "$ERR No 'archives' directory!'";
+if [ ! -d ca ]; then
+    echo -e "$ERR No 'ca' directory!'";
     exit 2
 fi
 
-if [ ! -d ca ]; then
-    echo -e "$ERR No 'ca' directory!'";
+if [ ! -d ca/archive ]; then
+    echo -e "$ERR No 'ca/archives' directory!'";
     exit 2
 fi
 
@@ -71,7 +71,7 @@ echo -e "$NOTE Checking direcory $ROOT_DIR  ..."
 if openssl verify -CAfile "$CA_CRT" "$CA_CRT" >/dev/null 2>&1; then
     echo -e "$SUCC RootCA directory (found self-signed CA)"
 
-    if [ ! -f "$ROOT_DIR/archive/01.pem" ] || ! cmp "$CA_CRT" "$ROOT_DIR/archive/01.pem" >/dev/null; then
+    if [ ! -f "$ROOT_DIR/ca/archive/01.pem" ] || ! cmp "$CA_CRT" "$ROOT_DIR/ca/archive/01.pem" >/dev/null; then
         echo -e "$ERR Main certificate does not match first archiv entry!"
         exit 2
     fi
@@ -108,23 +108,31 @@ if [ $certs -gt 0 ]; then
 
             if [[ "$line" == "V"* ]]; then
                 ca_number=$(echo "$line" | tr -s ' \t' ' ' | cut -d ' ' -f 3)
-                revoked="valid   "
+                revoked="        "
             else
                 ca_number=$(echo "$line" | tr -s ' \t' ' ' | cut -d ' ' -f 4)
                 revoked="revoked!"
             fi
 
-            server_cert=$(openssl x509 -in "$ROOT_DIR/archive/$ca_number.pem" -noout -text | grep -c 'TLS Web Server Authentication') || true
-            sign_cert=$(openssl x509 -in "$ROOT_DIR/archive/$ca_number.pem" -noout -text | grep -c 'Certificate Sign') || true
-            valid_until=$(openssl x509 -in "$ROOT_DIR/archive/$ca_number.pem" -noout -text | grep 'Not After :' | cut -d ':' -f2-)
+            server_cert=$(openssl x509 -in "$ROOT_DIR/ca/archive/$ca_number.pem" -noout -text | grep -c 'TLS Web Server Authentication') || true
+            sign_cert=$(openssl x509 -in "$ROOT_DIR/ca/archive/$ca_number.pem" -noout -text | grep -c 'Certificate Sign') || true
+            client_cert=$(openssl x509 -in "$ROOT_DIR/ca/archive/$ca_number.pem" -noout -text | grep -c 'Digital Signature') || true
+            valid_until=$(openssl x509 -in "$ROOT_DIR/ca/archive/$ca_number.pem" -noout -text | grep 'Not After :' | cut -d ':' -f2-)
 
+            if [[ $((server_cert + sign_cert + client_cert)) -ne 1 ]]; then
+                echo "$ERR unknown certificate type!"
+                exit 2
+            fi
 
             if [ "$server_cert" -eq 1 ]; then
                 str="server cert "
             elif [ "$sign_cert" -eq 1 ]; then
                 str="signing cert"
-            else
+            elif [ "$client_cert" -eq 1 ]; then
                 str="client cert "
+            else
+                echo "$ERR unknown certificate type!"
+                exit 2
             fi
             echo -e "$NOTE      $valid_until :: $revoked :: $str :: $line"
         fi

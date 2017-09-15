@@ -52,6 +52,7 @@ script:
       EOF
   - |
       bash --posix ./bin/create-signing-ca -d travis-signing << EOF
+      rootCA_password
       travis-signing
       bogus.com
       US
@@ -62,7 +63,6 @@ script:
       Bogus Inc. Certificate travis-signing
       signCA_password
       signCA_password
-      rootCA_password
       EOF
   - bash --posix ./bin/show-status
   - bash --posix ./bin/gen-html
