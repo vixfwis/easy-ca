@@ -21,11 +21,13 @@ localityName_default            = {{CA_CERT_L}}
 organizationName                = "4. Organization Name        "
 organizationName_default        = {{CA_CERT_O}}
 organizationalUnitName          = "5. Organizational Unit Name "
+organizationalUnitName_default  = {{CA_CERT_OU}}
 commonName                      = "6. Common Name              "
 commonName_max                  = 64
 commonName_default              = {{CA_USERNAME}}
 emailAddress                    = "7. Email Address (name@fqdn)"
 emailAddress_max                = 40
+emailAddress_default            = {{CA_CERT_MAIL}}
 
 #[ client_reqext ]
 #keyUsage                = critical,digitalSignature

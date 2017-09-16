@@ -23,7 +23,6 @@ usage() {
     echo "Options:"
     echo "    -c CLIENT_NAME  Client name (commonName) for the new cert"
     echo
-    exit 2
 }
 
 if [ ! -f ca/ca.crt ]; then
@@ -33,31 +32,31 @@ fi
 
 CLIENT_NAME=
 
-while getopts c: FLAG; do
+while getopts c:h FLAG; do
     case $FLAG in
         c) CLIENT_NAME=${OPTARG} ;;
-        *) echo -e -n "$ERR " && usage ;;
+        h) echo -e -n "$SUCC " && usage && exit 0 ;;
+        *) echo -e -n "$ERR " && usage && exit 2 ;;
     esac
 done
 
 if [ $OPTIND -le $# ]; then
-    echo -e -n "$ERR " && usage
+    echo -e -n "$ERR " && usage && exit 2
 elif [ "${CLIENT_NAME}" = "" ]; then
-    echo -e -n "$SUCC " && usage
+    echo -e -n "$ERR " && usage && exit 1
 fi
 
 SAFE_NAME=$(echo "${CLIENT_NAME}" | sed 's/\*/star/g' | sed 's/[^A-Za-z0-9-]/-/g')
 
-echo -e "$NOTE Creating new client certificate for '${CLIENT_NAME}'"
+echo -e "$NOTE Creating new client certificate for '$CLIENT_NAME'"
 
 pushd "${BIN_DIR}/.." > /dev/null
 
-if [ -f "conf/${SAFE_NAME}.client.conf" ]; then
-    echo -e "$ERR Configuration already exists for '${CLIENT_NAME}', exiting."
+if [ -d "certs/clients/$SAFE_NAME" ]; then
+    echo -e "$ERR Configuration already exists for '$CLIENT_NAME', exiting."
     exit 1
 fi
 
-trap 'rm -f "conf/${SAFE_NAME}.client.conf" "private/${SAFE_NAME}.client.key" "certs/${SAFE_NAME}.client.crt"' 0
 
 echo
 echo -e -n "$INPUT Enter passphase for signing CA key: "
@@ -69,33 +68,53 @@ openssl rsa -check \
             -passin env:CA_PASS \
             -noout
 
+trap 'rm -Rf "certs/clients/$SAFE_NAME"' 0
+mkdir "certs/clients/$SAFE_NAME"
+
 # Generate the client cert openssl config
 export SAN=""
 export CA_USERNAME="${CLIENT_NAME}"
-template "${BIN_DIR}/templates/client.tpl" "conf/${SAFE_NAME}.client.conf"
+export CA_CERT_MAIL=""
+ask_client_cert_questions
+template "${BIN_DIR}/templates/client.tpl" "certs/clients/$SAFE_NAME/$SAFE_NAME.conf"
 
 echo -e "$NOTE Creating the client key and csr"
 
 # Create the client key and csr
 openssl req -new -nodes \
-            -config "conf/${SAFE_NAME}.client.conf" \
-            -keyout "private/${SAFE_NAME}.client.key" \
-            -out "csr/${SAFE_NAME}.client.csr"
-chmod 0400 "private/${SAFE_NAME}.client.key"
+            -batch \
+            -config "certs/clients/$SAFE_NAME/$SAFE_NAME.conf" \
+            -keyout "certs/clients/$SAFE_NAME/$SAFE_NAME.key" \
+            -out "certs/clients/$SAFE_NAME/$SAFE_NAME.csr"
+openssl rsa -noout -check -in "certs/clients/$SAFE_NAME/$SAFE_NAME.key"
+chmod 0400 "certs/clients/$SAFE_NAME/$SAFE_NAME.key"
 
 echo -e "$NOTE Creating the client certificate"
 
 # Create the client certificate
 openssl ca -batch -notext \
-           -config conf/ca.conf \
-           -in "csr/${SAFE_NAME}.client.csr" \
-           -out "certs/${SAFE_NAME}.client.crt" \
+           -config ca/ca.conf \
+           -in "certs/clients/$SAFE_NAME/$SAFE_NAME.csr" \
+           -out "certs/clients/$SAFE_NAME/$SAFE_NAME.crt" \
            -extensions client_ext \
            -passin env:CA_PASS
 
+echo -e "$NOTE Verifying certificate/key pair"
+
+key_mod=$(openssl rsa -noout -modulus -in "certs/clients/$SAFE_NAME/$SAFE_NAME.key")
+cert_mod=$(openssl x509 -noout -modulus -in "certs/clients/$SAFE_NAME/$SAFE_NAME.crt")
+
+if [ ! "$key_mod" = "$cert_mod" ];then
+    echo -e "$ERR Certificate/Key pair invalid:"
+    echo -e "$ERR     <>$cert_mod<>"
+    echo -e "$ERR     <>$key_mod<>"
+    echo
+    exit 2
+fi
+
 echo -e "$NOTE Verifying trusted chain"
 
-openssl verify -CAfile ca/chain.pem "certs/${SAFE_NAME}.client.crt"
+openssl verify -CAfile ca/chain.pem "certs/clients/$SAFE_NAME/$SAFE_NAME.crt"
 
 popd > /dev/null
 

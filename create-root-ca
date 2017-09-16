@@ -63,16 +63,15 @@ echo
 echo -e -n "$INPUT Enter passphase for encrypting root CA key: "
 read -r -s PASS1
 echo
+if [[ ${#PASS1} -lt 4 ]]; then
+    echo -e "$ERR Passphrase is too short, please use at least 4 characters!"
+    exit 1
+fi
 echo -e -n "$INPUT Verifying - Enter passphase for encrypting root CA key: "
 read -r -s PASS2
 echo
-
 if [[ "${PASS1}" != "${PASS2}" ]]; then
     echo -e "$ERR Passphrases did not match, exiting."
-    exit 1
-fi
-if [[ ${#PASS1} -lt 4 ]]; then
-    echo -e "$ERR Passphrase is too short, please use at least 4 characters!"
     exit 1
 fi
 
@@ -84,7 +83,7 @@ CA_PATH="$( fullpath "${CA_DIR}")"
 pushd "${CA_DIR}" > /dev/null
 
 # Generate the root CA openssl config
-template "${BIN_DIR}/templates/root.tpl" "conf/ca.conf"
+template "${BIN_DIR}/templates/root.tpl" "ca/ca.conf"
 
 echo -e "$NOTE Creating the root CA key (${CA_KEY_ALG} with ${CA_KEY_LENGTH_ROOTCA} bits)"
 
@@ -94,7 +93,7 @@ chmod 0400 ca/private/ca.key
 echo -e "$NOTE Creating the root CA csr"
 
 openssl req -new -batch \
-            -config conf/ca.conf \
+            -config ca/ca.conf \
             -key ca/private/ca.key \
             -out ca/ca.csr \
             -passin env:CA_PASS
@@ -102,7 +101,7 @@ openssl req -new -batch \
 echo -e "$NOTE Creating the root CA certificate"
 
 openssl ca -selfsign -batch -notext \
-           -config conf/ca.conf \
+           -config ca/ca.conf \
            -in ca/ca.csr \
            -out ca/ca.crt \
            -extensions root_ca_ext \
@@ -114,31 +113,24 @@ ln -s ca.crt ca/root.crt
 echo -e "$NOTE Creating the root CA CRL"
 
 openssl ca -gencrl -batch \
-           -config conf/ca.conf \
-           -out crl/ca.crl \
+           -config ca/ca.conf \
+           -out ca/crl/ca.crl \
            -passin env:CA_PASS
 
 if [ $SYMLINK -eq 1 ]; then
     echo -e "$NOTE Symlinking toolchain (dev mode)"
-
-    for BIN in ${BINARIES_ROOT}; do
-        ln -s "${BIN_DIR}/${BIN}" bin/
-    done
-    mkdir bin/templates/
-    for TPL in ${TEMPLATES_ROOT}; do
-        ln -s "${BIN_DIR}/templates/${TPL}" bin/templates/
-    done
+    CP_CMD='ln -s'
 else
     echo -e "$NOTE Copying toolchain"
-
-    for BIN in ${BINARIES_ROOT}; do
-        cp "${BIN_DIR}/${BIN}" bin/
-    done
-    mkdir bin/templates/
-    for TPL in ${TEMPLATES_ROOT}; do
-        cp "${BIN_DIR}/templates/${TPL}" bin/templates/
-    done
+    CP_CMD='cp'
 fi
+for BIN in ${BINARIES_ROOT}; do
+    $CP_CMD "${BIN_DIR}/${BIN}" bin/
+done
+mkdir bin/templates/
+for TPL in ${TEMPLATES_ROOT}; do
+    $CP_CMD "${BIN_DIR}/templates/${TPL}" bin/templates/
+done
 
 
 popd > /dev/null

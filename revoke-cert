@@ -22,7 +22,6 @@ usage() {
     echo "Options:"
     echo "    -c CERT  Path the the certificate file to be revoked"
     echo
-    exit 2
 }
 
 if [ ! -f ca/ca.crt ]; then
@@ -32,17 +31,18 @@ fi
 
 CERT=
 
-while getopts c: FLAG; do
+while getopts c:h FLAG; do
     case $FLAG in
         c) CERT=${OPTARG} ;;
-        *) echo -e -n "$ERR " && usage ;;
+        h) echo -e -n "$SUCC " && usage && exit 0 ;;
+        *) echo -e -n "$ERR " && usage && exit 2;;
     esac
 done
 
 if [ $OPTIND -le $# ]; then
-    echo -e -n "$ERR " && usage
+    echo -e -n "$ERR " && usage && exit 2
 elif [ "${CERT}" = "" ]; then
-    echo -e -n "$SUCC " && usage
+    echo -e -n "$ERR " && usage && exit 1
 fi
 
 echo -e "$SUCC Revoking certificate '${CERT}'"
@@ -103,7 +103,7 @@ export SAN=""
 echo -e "$NOTE Revoke the certificate"
 
 openssl ca \
-           -config conf/ca.conf \
+           -config ca/ca.conf \
            -revoke "${CERT_PATH}" \
            -crl_reason "${REASON}" \
            -passin env:CA_PASS
@@ -111,13 +111,9 @@ openssl ca \
 echo -e "$NOTE Regenerate the CRL"
 
 openssl ca -gencrl \
-           -config conf/ca.conf \
-           -out crl/ca.crl \
+           -config ca/ca.conf \
+           -out ca/ca.crl \
            -passin env:CA_PASS
-
-echo -e "$NOTE Printing new CRL"
-
-openssl crl -in crl/ca.crl -noout -text
 
 popd > /dev/null
 

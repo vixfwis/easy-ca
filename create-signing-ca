@@ -22,27 +22,30 @@ usage() {
     echo
     echo "Options:"
     echo "    -d CA_DIR  Target directory to be created and initialized"
+    echo "    -l         Symlink toolchain (designed for development)"
     echo
-    exit 2
 }
 
 if ! openssl verify -CAfile ca/ca.crt ca/ca.crt >/dev/null 2>&1; then
-    echo -e -n "$ERR " && usage
+    echo -e -n "$ERR " && usage && exit 2
 fi
 
 CA_DIR=
+SYMLINK=0
 
-while getopts d: FLAG; do
+while getopts d:hl FLAG; do
     case $FLAG in
         d) CA_DIR=${OPTARG} ;;
-        *) echo -e -n "$ERR " && usage ;;
+        h) echo -e -n "$SUCC " && usage && exit 0;;
+        l) SYMLINK=1 ;;
+        *) echo -e -n "$ERR " && usage && exit 2;;
     esac
 done
 
 if [ $OPTIND -le $# ]; then
-    echo -e -n "$ERR " && usage
+    echo -e -n "$ERR " && usage && exit 2
 elif [[ "${CA_DIR}" = "" ]]; then
-    echo -e -n "$SUCC " && usage
+    echo -e -n "$SUCC " && usage && exit 2
 fi
 
 PARENT="${BIN_DIR}/.."
@@ -53,6 +56,10 @@ echo
 echo -e "$NOTE Creating new signing sub-CA in '${CA_DIR}'"
 echo
 
+init_ca_home "${CA_DIR}"
+trap 'rm -Rf "${CA_DIR}"' 0
+
+# early verification of root ca password
 echo -e -n "$INPUT Enter passphase for root CA key: "
 read -r -s PARENT_PASS
 echo
@@ -62,8 +69,7 @@ openssl rsa -check \
             -passin env:CA_PARENT_PASS \
             -noout
 
-init_ca_home "${CA_DIR}"
-trap 'rm -Rf "${CA_DIR}"' 0
+
 generate_conf "${CA_DIR}/bin/defaults.conf"
 source "${CA_DIR}/bin/defaults.conf"
 
@@ -78,25 +84,25 @@ echo
 echo -e -n "$INPUT Enter passphase for encrypting signing sub-CA key: "
 read -r -s PASS1
 echo
-echo -e -n "$INPUT Verifying - Enter passphase for encrypting signing sub-CA key: "
-read -r -s PASS2
-echo
-
-if [ "${PASS1}" != "${PASS2}" ]; then
-    echo -e "$ERR Passphrases did not match, exiting."
-    exit 1
-fi
 if [[ ${#PASS1} -lt 4 ]]; then
     echo -e "$ERR Passphrase is too short, please use at least 4 characters!"
     exit 1
 fi
+echo -e -n "$INPUT Verifying - Enter passphase for encrypting signing sub-CA key: "
+read -r -s PASS2
+echo
+if [ "${PASS1}" != "${PASS2}" ]; then
+    echo -e "$ERR Passphrases did not match, exiting."
+    exit 1
+fi
+
 export CA_PASS"=${PASS1}"
 export SAN=""
 
 pushd "${CA_DIR}" > /dev/null
 
 # Generate the signing CA openssl config
-template "${BIN_DIR}/templates/signing.tpl" "conf/ca.conf"
+template "${BIN_DIR}/templates/signing.tpl" "ca/ca.conf"
 
 echo -e "$NOTE Creating the signing sub-CA key"
 
@@ -107,7 +113,7 @@ chmod 0400 ca/private/ca.key
 echo -e "$NOTE Creating the signing sub-CA csr"
 
 openssl req -new -batch \
-            -config conf/ca.conf \
+            -config ca/ca.conf \
             -key ca/private/ca.key \
             -out ca/ca.csr \
             -passin env:CA_PASS
@@ -116,7 +122,7 @@ echo -e "$NOTE Creating the signing sub-CA certificate"
 
 pushd "${PARENT}" > /dev/null
 openssl ca -batch -notext \
-           -config conf/ca.conf \
+           -config ca/ca.conf \
            -in "${CA_DIR}/ca/ca.csr" \
            -out "${CA_DIR}/ca/ca.crt" \
            -extensions signing_ca_ext \
@@ -126,8 +132,8 @@ popd > /dev/null
 echo -e "$NOTE Creating the signing sub-CA CRL"
 
 openssl ca -gencrl -batch \
-           -config conf/ca.conf \
-           -out crl/ca.crl \
+           -config ca/ca.conf \
+           -out ca/crl/ca.crl \
            -passin env:CA_PASS
 
 echo -e "$NOTE Creating the chain bundle"
@@ -135,21 +141,26 @@ echo -e "$NOTE Creating the chain bundle"
 cat "${PARENT}/ca/chain.pem" > ca/chain.pem
 cat ca/ca.crt >> ca/chain.pem
 
-cp "${PARENT}/ca/ca.crt" ca/root.crt
+cp "${PARENT}/ca/root.crt" ca/root.crt
 
 echo -e "$NOTE Verifying trusted chain"
 
 openssl verify -CAfile ca/chain.pem ca/ca.crt
+openssl verify -CAfile ca/root.crt ca/ca.crt
 
-echo -e "$NOTE Copying toolchain (symlinking)"
-
-# Replicate the existing binary directory
+if [ $SYMLINK -eq 1 ]; then
+    echo -e "$NOTE Symlinking toolchain (dev mode)"
+    CP_CMD='ln -s'
+else
+    echo -e "$NOTE Copying toolchain"
+    CP_CMD='cp'
+fi
 for BIN in ${BINARIES_SIGN}; do
-    ln -s "${BIN_DIR}/${BIN}" bin/
+    $CP_CMD "${BIN_DIR}/${BIN}" bin/
 done
 mkdir bin/templates/
 for TPL in ${TEMPLATES_SIGN}; do
-    ln -s "${BIN_DIR}/templates/${TPL}" bin/templates/
+    $CP_CMD "${BIN_DIR}/templates/${TPL}" bin/templates/
 done
 
 popd > /dev/null
