@@ -21,15 +21,18 @@ usage() {
     echo
     echo "Options:"
     echo "    -d CA_DIR  Target directory to be created and initialized"
+    echo "    -l         Symlink toolchain (designed for development)"
     echo
 }
 
 CA_DIR=
+SYMLINK=0
 
-while getopts "d:h" FLAG; do
+while getopts "d:hl" FLAG; do
     case $FLAG in
         d) CA_DIR=${OPTARG} ;;
         h) echo -e -n "$SUCC " && usage && exit 0;;
+        l) SYMLINK=1 ;;
         *) echo -e -n "$ERR " && usage && exit 2;;
     esac
 done
@@ -115,15 +118,28 @@ openssl ca -gencrl -batch \
            -out crl/ca.crl \
            -passin env:CA_PASS
 
-echo -e "$NOTE Copying toolchain (symlinking)"
+if [ $SYMLINK -eq 1 ]; then
+    echo -e "$NOTE Symlinking toolchain (dev mode)"
 
-for BIN in ${BINARIES_ROOT}; do
-    ln -s "${BIN_DIR}/${BIN}" bin/
-done
-mkdir bin/templates/
-for TPL in ${TEMPLATES_ROOT}; do
-    ln -s "${BIN_DIR}/templates/${TPL}" bin/templates/
-done
+    for BIN in ${BINARIES_ROOT}; do
+        ln -s "${BIN_DIR}/${BIN}" bin/
+    done
+    mkdir bin/templates/
+    for TPL in ${TEMPLATES_ROOT}; do
+        ln -s "${BIN_DIR}/templates/${TPL}" bin/templates/
+    done
+else
+    echo -e "$NOTE Copying toolchain"
+
+    for BIN in ${BINARIES_ROOT}; do
+        cp "${BIN_DIR}/${BIN}" bin/
+    done
+    mkdir bin/templates/
+    for TPL in ${TEMPLATES_ROOT}; do
+        cp "${BIN_DIR}/templates/${TPL}" bin/templates/
+    done
+fi
+
 
 popd > /dev/null
 

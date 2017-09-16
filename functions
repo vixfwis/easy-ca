@@ -42,7 +42,7 @@ sign_index.tpl
 
 # Output highlighting
 
-NOTE="\033[34;1m[*]\033[0m"
+NOTE="\033[35;1m[*]\033[0m"
 SUCC="\033[32;1m[!]\033[0m"
 INPUT="\033[36;1m[>]\033[0m"
 ERR="\033[31;1m[!]\033[0m"

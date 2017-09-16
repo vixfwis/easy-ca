@@ -17,6 +17,14 @@ source "${BIN_DIR}/defaults.conf"
 
 ROOT_DIR="$(readlink -e "${BIN_DIR}/..")"
 
+echo -e "$NOTE Checking direcory $ROOT_DIR  ..."
+
+if [ -L "${BIN_DIR}/functions" ]; then
+    echo -e "$NOTE Symlinked toolchain (dev mode)"
+else
+    echo -e "$NOTE Standalone toolchain"
+fi
+
 # check directory structure
 
 if [ ! -d ca ]; then
@@ -66,8 +74,6 @@ fi
 
 CA_CRT="$ROOT_DIR/ca/ca.crt"
 
-echo -e "$NOTE Checking direcory $ROOT_DIR  ..."
-
 if openssl verify -CAfile "$CA_CRT" "$CA_CRT" >/dev/null 2>&1; then
     echo -e "$SUCC RootCA directory (found self-signed CA)"
 
@@ -88,7 +94,7 @@ echo -e "$NOTE     Name                        $CA_NAME"
 echo -e "$NOTE     Domain                      $CA_DOMAIN"
 subject=$(openssl x509 -noout -in "$CA_CRT" -subject) # ignore subject=
 echo -e "$NOTE     Subject                     ${subject:8}"
-if [ ! $rootCA -eq 0 ]; then
+if [ ! $rootCA -eq 1 ]; then
     issuer=$(openssl x509 -noout -in "$CA_CRT" -issuer) # ignore issuer=
     echo -e "$NOTE     Issuer                      ${issuer:7}"
 fi

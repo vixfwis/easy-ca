@@ -10,7 +10,7 @@ before_install:
 
 script:
   - |
-      bash --posix ./create-root-ca -d travis-ca <<EOF
+      bash --posix ./create-root-ca -l -d travis-ca <<EOF
       travis-ca
       bogus.com
       US
