@@ -22,7 +22,6 @@ usage() {
     echo
     echo "Options:"
     echo "    -f       Override existing html directory"
-    exit 2
 }
 
 if [ ! -f ca/ca.crt ]; then
@@ -34,9 +33,9 @@ FORCE=0
 
 while getopts hf FLAG; do
     case $FLAG in
-        h) echo -e -n "$SUCC " && usage ;;
+        h) echo -e -n "$SUCC " && usage && exit 0 ;;
         f) FORCE=1 ;;
-        *) echo -e -n "$ERR " && usage ;;
+        *) echo -e -n "$ERR " && usage && exit 2 ;;
         #xy) VAR=${OPTARG} ;;
     esac
 done
@@ -91,7 +90,7 @@ else
 
     cp ca/root.crt "html/ca/${CA_HTML_ROOT_NAME}.crt"
     cp ca/ca.crt "html/ca/${CA_HTML_SIGN_NAME}.crt"
-    cp crl/ca.crl "html/ca/${CA_HTML_SIGN_NAME}.crl"
+    cp ca/ca.crl "html/ca/${CA_HTML_SIGN_NAME}.crl"
 
     echo -e "$SUCC html directory successfully created"
 fi
