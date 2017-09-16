@@ -69,7 +69,7 @@ if openssl verify -CAfile ca/ca.crt ca/ca.crt >/dev/null 2>&1; then
     echo -e "$NOTE Copying certs"
 
     cp ca/ca.crt "html/ca/${CA_HTML_ROOT_NAME}.crt"
-    cp crl/ca.crl "html/ca/${CA_HTML_ROOT_NAME}.crl"
+    cp ca/ca.crl "html/ca/${CA_HTML_ROOT_NAME}.crl"
 
     echo -e "$SUCC html directory successfully created"
 else
