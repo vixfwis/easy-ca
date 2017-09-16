@@ -29,7 +29,7 @@ create-root-ca -d $ROOT_CA_DIR
 ```
 $ROOT_CA_DIR/ca/ca.crt
 $ROOT_CA_DIR/private/ca.key
-$ROOT_CA_DIR/crl/ca.crlkey
+$ROOT_CA_DIR/ca/ca.crl
 ```
 
 
@@ -48,7 +48,8 @@ $ROOT_CA_DIR/bin/create-signing-ca -d $SIGNING_CA_DIR
 $SIGNING_CA_DIR/ca/ca.crt
 $SIGNING_CA_DIR/ca/chain.pem
 $SIGNING_CA_DIR/private/ca.key
-$SIGNING_CA_DIR/crl/ca.crl
+$SIGNING_CA_DIR/ca/ca.crl
+$SIGNING_CA_DIR/ca/root.crt
 ```
 
 
@@ -58,21 +59,15 @@ $SIGNING_CA_DIR/crl/ca.crl
 Running **create-server** from within any CA installation will issue a new server (serverAuth) certificate:
 
 ```
-$CA_DIR/bin/create-server -s fqdn.domain.com
-```
-
-Optionally, you can specify one (or more) subjectAltNames to accompany the new certificate:
-
-```
-$CA_DIR/bin/create-server -s fqdn.domain.com -a alt1.domain.com -a alt2.domain.com
+$CA_DIR/bin/create-server -s "FQDN Description" -a fqdn.domain.com -a www.fqdn.domain.com
 ```
 
 **create-server** will prompt for basic DN configuration, using the CA configuration as defaults. After the script is completed, the server certificate, key, and CSR are available for review:
 
 ```
-$CA_DIR/certs/fqdn-domain-com.server.crt
-$CA_DIR/private/fqdn-domain-com.server.key
-$CA_DIR/csr/fqdn-domain-com.server.csr
+$CA_DIR/certs/server/FQDN-Description/FQDN-Description.crt
+$CA_DIR/certs/server/FQDN-Description/FQDN-Description.key
+$CA_DIR/certs/server/FQDN-Description/FQDN-Description.csr
 ```
 
 
@@ -88,9 +83,9 @@ $CA_DIR/bin/create-client -c user@domain.com
 **create-client** will prompt for basic DN configuration, using the CA configuration as defaults. After the script is completed, the client certificate, key, and CSR are available for review:
 
 ```
-$CA_DIR/certs/user-domain-com.client.crt
-$CA_DIR/private/user-domain-com.client.key
-$CA_DIR/csr/user-domain-com.client.csr
+$CA_DIR/certs/clients/user-domain-com/user-domain-com.crt
+$CA_DIR/certs/clients/user-domain-com/user-domain-com.key
+$CA_DIR/certs/clients/user-domain-com/user-domain-com.csr
 ```
 
 
@@ -100,13 +95,13 @@ $CA_DIR/csr/user-domain-com.client.csr
 Running **revoke-cert** from within a CA installation allows you to revoke a certificate issued by that CA and update the CRL:
 
 ```
-$CA_DIR/bin/revoke-cert -c $CA_DIR/certs/fqdn-domain-com.server.crt
+$CA_DIR/bin/revoke-cert -c $CA_DIR/certs/server/FQDN-Description/FQDN-Description.crt
 ```
 
 **revoke-cert** will prompt for the revocation reason. After the script is completed, the server CRL is updated and available for review:
 
 ```
-$CA_DIR/crl/ca.crl
+$CA_DIR/ca/ca.crl
 ```
 
 
@@ -122,7 +117,6 @@ These scripts are very simple, and make some hard-coded assumptions about behavi
 * Client and Server certificates have 2048-bit RSA keys (configurable in *defaults.conf*)
 * Client and Server keys are not encrypted
 * There is no wrapper *yet* for renewing certificates
-* The tool chain is currently for developing symlinked, **not** copied
 
 
 
