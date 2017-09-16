@@ -45,7 +45,7 @@ script:
       travis-client@bogus.com
       EOF
   - |
-      bash --posix ./bin/revoke-cert -c certs/server/travis-server-bogus-com/travis-server-bogus-com.server.crt << EOF
+      bash --posix ./bin/revoke-cert -c certs/server/travis-server-bogus-com/travis-server-bogus-com.crt << EOF
       1
       y
       rootCA_password
@@ -89,13 +89,13 @@ script:
       travis-client@bogus.com
       EOF
   - |
-      bash --posix ./bin/revoke-cert -c certs/travis-server-bogus-com.server.crt << EOF
+      bash --posix ./bin/revoke-cert -c certs/travis-server-bogus-com/travis-server-bogus-com.crt << EOF
       1
       y
       signCA_password
       EOF
   - |
-      bash --posix ./bin/revoke-cert -c certs/travis-client.client.crt << EOF
+      bash --posix ./bin/revoke-cert -c certs/travis-client/travis-client.crt << EOF
       5
       y
       signCA_password
