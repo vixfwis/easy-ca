@@ -8,7 +8,7 @@ OpenSSL wrapper scripts for managing basic CA functions
 A suite of bash scripts for automating very basic OpenSSL Certificate Authority operations:
 * Creating Root CAs
 * Creating Intermediate Signing CAs
-* Creating Server certificates (with optional subjectAltNames)
+* Creating Server certificates
 * Creating Client certificates
 * Revoking certificates and maintaining CRLs
 
@@ -28,7 +28,7 @@ create-root-ca -d $ROOT_CA_DIR
 
 ```
 $ROOT_CA_DIR/ca/ca.crt
-$ROOT_CA_DIR/private/ca.key
+$ROOT_CA_DIR/ca/private/ca.key
 $ROOT_CA_DIR/ca/ca.crl
 ```
 
@@ -42,14 +42,14 @@ Running **create-signing-ca** from within a Root CA installation will initialize
 $ROOT_CA_DIR/bin/create-signing-ca -d $SIGNING_CA_DIR
 ```
 
-**create-signing-ca** will prompt for basic DN configuration, using the Root CA configuration as defaults. The Intermediate Signing CA is now ready for use. The CA key, certificate, chain file, and CRL are available for review:
+**create-signing-ca** will prompt for basic DN configuration, using the Root CA configuration as defaults. The Intermediate Signing CA is now ready for use. The CA key, certificate, chain file, and CRL are available for review as well as the root certificate and the chain bundle:
 
 ```
 $SIGNING_CA_DIR/ca/ca.crt
-$SIGNING_CA_DIR/ca/chain.pem
-$SIGNING_CA_DIR/private/ca.key
+$SIGNING_CA_DIR/ca/private/ca.key
 $SIGNING_CA_DIR/ca/ca.crl
 $SIGNING_CA_DIR/ca/root.crt
+$SIGNING_CA_DIR/ca/chain.pem
 ```
 
 
