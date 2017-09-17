@@ -28,14 +28,12 @@ script:
       rootCA_password
       San Francisco
       Jurisdiction of travis-server.bogus-com
-      travis-server.bogus.com
       EOF
   - |
       bash --posix ./bin/create-client -c travis-client << EOF
       rootCA_password
       San Francisco
       private
-      travis-client
       travis-client@bogus.com
       EOF
   - |
@@ -66,14 +64,12 @@ script:
       signCA_password
       San Francisco
       Jurisdiction of travis-server.bogus-com
-      travis-server.bogus.com
       EOF
   - |
       bash --posix ./bin/create-client -c travis-client << EOF
       signCA_password
       San Francisco
       private
-      travis-client
       travis-client@bogus.com
       EOF
   - |
