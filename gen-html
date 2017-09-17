@@ -71,6 +71,9 @@ if openssl verify -CAfile ca/ca.crt ca/ca.crt >/dev/null 2>&1; then
     cp ca/ca.crt "html/ca/${CA_HTML_ROOT_NAME}.crt"
     cp ca/ca.crl "html/ca/${CA_HTML_ROOT_NAME}.crl"
 
+    ln -s "${CA_HTML_ROOT_NAME}.crt" "html/ca/$CA_NAME.crt"
+    ln -s "${CA_HTML_ROOT_NAME}.crl" "html/ca/$CA_NAME.crl"
+
     echo -e "$SUCC html directory successfully created"
 else
     echo -e "$NOTE Creating index.html for sign CA"
@@ -91,6 +94,9 @@ else
     cp ca/root.crt "html/ca/${CA_HTML_ROOT_NAME}.crt"
     cp ca/ca.crt "html/ca/${CA_HTML_SIGN_NAME}.crt"
     cp ca/ca.crl "html/ca/${CA_HTML_SIGN_NAME}.crl"
+
+    ln -s "${CA_HTML_SIGN_NAME}.crt" "html/ca/$CA_NAME.crt"
+    ln -s "${CA_HTML_SIGN_NAME}.crl" "html/ca/$CA_NAME.crl"
 
     echo -e "$SUCC html directory successfully created"
 fi
