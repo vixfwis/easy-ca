@@ -78,6 +78,7 @@ localityName            = optional              # Included if present
 organizationName        = match                 # Must match
 organizationalUnitName  = optional              # Included if present
 commonName              = supplied              # Must be present
+emailAddress            = optional              # Included if present
 
 # Extensions for signing certs issued by this signing CA
 [ server_ext ]

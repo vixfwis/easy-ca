@@ -197,17 +197,17 @@ EOF
 ##
 ask_server_cert_questions() {
 
-    echo -e -n "$INPUT Country code for new certificates [${CA_CERT_C}]: "
-    read -r CERT_C
-    if [ -n "${CERT_C}" ]; then
-        CA_CERT_C="${CERT_C}"
-    fi
+    #echo -e -n "$INPUT Country code for new certificates [${CA_CERT_C}]: "
+    #read -r CERT_C
+    #if [ -n "${CERT_C}" ]; then
+    #    CA_CERT_C="${CERT_C}"
+    #fi
 
-    echo -e -n "$INPUT State for new certificates [${CA_CERT_ST}]: "
-    read -r CERT_ST
-    if [ -n "${CERT_ST}" ]; then
-        CA_CERT_ST="${CERT_ST}"
-    fi
+    #echo -e -n "$INPUT State for new certificates [${CA_CERT_ST}]: "
+    #read -r CERT_ST
+    #if [ -n "${CERT_ST}" ]; then
+    #    CA_CERT_ST="${CERT_ST}"
+    #fi
 
     echo -e -n "$INPUT City for new certificates [${CA_CERT_L}]: "
     read -r CERT_L
@@ -215,11 +215,11 @@ ask_server_cert_questions() {
         CA_CERT_L="${CERT_L}"
     fi
 
-    echo -e -n "$INPUT Organization for new certificates [${CA_CERT_O}]: "
-    read -r CERT_O
-    if [ -n "${CERT_O}" ]; then
-        CA_CERT_O="${CERT_O}"
-    fi
+    #echo -e -n "$INPUT Organization for new certificates [${CA_CERT_O}]: "
+    #read -r CERT_O
+    #if [ -n "${CERT_O}" ]; then
+    #    CA_CERT_O="${CERT_O}"
+    #fi
 
     echo -e -n "$INPUT Organization unit for new certificates [${CA_CERT_OU}]: "
     read -r CERT_OU
@@ -235,17 +235,17 @@ ask_server_cert_questions() {
 ##
 ask_client_cert_questions() {
 
-    echo -e -n "$INPUT Country code for new certificates [${CA_CERT_C}]: "
-    read -r CERT_C
-    if [ -n "${CERT_C}" ]; then
-        CA_CERT_C="${CERT_C}"
-    fi
+    #echo -e -n "$INPUT Country code for new certificates [${CA_CERT_C}]: "
+    #read -r CERT_C
+    #if [ -n "${CERT_C}" ]; then
+    #    CA_CERT_C="${CERT_C}"
+    #fi
 
-    echo -e -n "$INPUT State for new certificates [${CA_CERT_ST}]: "
-    read -r CERT_ST
-    if [ -n "${CERT_ST}" ]; then
-        CA_CERT_ST="${CERT_ST}"
-    fi
+    #echo -e -n "$INPUT State for new certificates [${CA_CERT_ST}]: "
+    #read -r CERT_ST
+    #if [ -n "${CERT_ST}" ]; then
+    #    CA_CERT_ST="${CERT_ST}"
+    #fi
 
     echo -e -n "$INPUT City for new certificates [${CA_CERT_L}]: "
     read -r CERT_L
@@ -253,11 +253,11 @@ ask_client_cert_questions() {
         CA_CERT_L="${CERT_L}"
     fi
 
-    echo -e -n "$INPUT Organization for new certificates [${CA_CERT_O}]: "
-    read -r CERT_O
-    if [ -n "${CERT_O}" ]; then
-        CA_CERT_O="${CERT_O}"
-    fi
+    #echo -e -n "$INPUT Organization for new certificates [${CA_CERT_O}]: "
+    #read -r CERT_O
+    #if [ -n "${CERT_O}" ]; then
+    #    CA_CERT_O="${CERT_O}"
+    #fi
 
     echo -e -n "$INPUT Organization unit for new certificates [${CA_CERT_OU}]: "
     read -r CERT_OU
