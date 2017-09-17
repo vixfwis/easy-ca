@@ -16,7 +16,7 @@ source "${BIN_DIR}/functions"
 source "${BIN_DIR}/defaults.conf"
 
 usage() {
-    echo "Usage: $0 -d CA_DIR"
+    echo "Usage: $0 [-l] -d CA_DIR"
     echo "Initializes a new root CA in CA_DIR"
     echo
     echo "Options:"
@@ -114,7 +114,7 @@ echo -e "$NOTE Creating the root CA CRL"
 
 openssl ca -gencrl -batch \
            -config ca/ca.conf \
-           -out ca/crl/ca.crl \
+           -out ca/ca.crl \
            -passin env:CA_PASS
 
 if [ $SYMLINK -eq 1 ]; then

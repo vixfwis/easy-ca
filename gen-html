@@ -42,7 +42,7 @@ done
 
 if [ -d html ]; then
     if [ $FORCE -ne 1 ]; then
-        echo "Html directory exists already!"
+        echo -e "$ERR Html directory exists already!"
         echo "Specify -f to override"
         exit 2
     fi

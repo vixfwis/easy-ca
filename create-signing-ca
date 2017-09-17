@@ -16,7 +16,7 @@ source "${BIN_DIR}/functions"
 source "${BIN_DIR}/defaults.conf"
 
 usage() {
-    echo "Usage: $0 -d CA_DIR"
+    echo "Usage: $0 [-l] -d CA_DIR"
     echo "Initializes a new signing sub-CA in CA_DIR"
     echo "Must be run inside a root CA dir"
     echo
@@ -133,7 +133,7 @@ echo -e "$NOTE Creating the signing sub-CA CRL"
 
 openssl ca -gencrl -batch \
            -config ca/ca.conf \
-           -out ca/crl/ca.crl \
+           -out ca/ca.crl \
            -passin env:CA_PASS
 
 echo -e "$NOTE Creating the chain bundle"
