@@ -62,7 +62,9 @@ Running **create-server** from within any CA installation will issue a new serve
 $CA_DIR/bin/create-server -s "FQDN Description" -a fqdn.domain.com -a www.fqdn.domain.com
 ```
 
-**create-server** will prompt for basic DN configuration, using the CA configuration as defaults. After the script is completed, the server certificate, key, and CSR are available for review:
+All addresses **must** be supplied via the *-a* flag.
+
+**create-server** will prompt for basic DN configuration, using the CA configuration as defaults. After the script is completed, the server certificate, key, and CSR are available for review in the directory *$CA_DIR/certs/server/FQDN-Description/*:
 
 ```
 $CA_DIR/certs/server/FQDN-Description/FQDN-Description.crt
@@ -80,7 +82,7 @@ Running **create-client** from within any CA installation will issue a new clien
 $CA_DIR/bin/create-client -c user@domain.com
 ```
 
-**create-client** will prompt for basic DN configuration, using the CA configuration as defaults. After the script is completed, the client certificate, key, and CSR are available for review:
+**create-client** will prompt for basic DN configuration, using the CA configuration as defaults. After the script is completed, the client certificate, key, and CSR are available for review in the directory *$CA_DIR/certs/clients/user-domain-com/*:
 
 ```
 $CA_DIR/certs/clients/user-domain-com/user-domain-com.crt
