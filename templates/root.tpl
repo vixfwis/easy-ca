@@ -74,9 +74,9 @@ x509_extensions         = signing_ca_ext             # Default cert extensions
 [ root_ca_pol ]
 countryName             = match                 # Must match
 stateOrProvinceName     = match                 # Must match
-localityName            = optional              # Included if present
+localityName            = supplied              # Must be present
 organizationName        = match                 # Must match
-organizationalUnitName  = optional              # Included if present
+organizationalUnitName  = supplied              # Must be present
 commonName              = supplied              # Must be present
 emailAddress            = optional              # Included if present
 
