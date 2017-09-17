@@ -146,7 +146,7 @@ srl=$(cat "$ROOT_DIR/ca/db/crt.srl")
 certs=$((10#$srl - rootCA - 1))
 echo -e "$NOTE     Signed Certificates        " $certs
 skip=$rootCA
-if [ $certs -gt $skip ]; then
+if [ $certs -gt 0 ]; then
     num=1
     echo
     echo -e "$NOTE       id :: Valid until              :: revoked :: type    :: sha1 hash                                                   :: subject"
