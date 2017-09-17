@@ -44,6 +44,7 @@ elif [[ "${CA_DIR}" = "" ]]; then
 fi
 
 CA_NAME="$( basename "${CA_DIR}" )"
+export CA_NAME
 
 echo -e "$NOTE Creating root CA in dir '${CA_DIR}'"
 
@@ -79,6 +80,7 @@ export CA_PASS="${PASS1}"
 export SAN=""
 
 CA_PATH="$( fullpath "${CA_DIR}")"
+export CA_PATH
 
 pushd "${CA_DIR}" > /dev/null
 

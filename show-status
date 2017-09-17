@@ -199,7 +199,7 @@ if ! openssl crl -in "$ROOT_DIR/ca/ca.crl" -CAfile "$CA_CRT" >/dev/null 2>&1; th
     exit 2
 fi
 
-if [ $(openssl crl -in "$ROOT_DIR/ca/ca.crl" -text -noout | grep -c 'No Revoked Certificates.') -eq 1 ]; then
+if [ "$(openssl crl -in "$ROOT_DIR/ca/ca.crl" -text -noout | grep -c 'No Revoked Certificates.')" -eq 1 ]; then
     revoked_certs=0
 else
     revoked_certs=$(openssl crl -in "$ROOT_DIR/ca/ca.crl" -text -noout | grep -c 'Revocation Date: ')

@@ -59,9 +59,9 @@ mkdir html/ca/
 if openssl verify -CAfile ca/ca.crt ca/ca.crt >/dev/null 2>&1; then
     echo -e "$NOTE Creating index.html for root CA"
 
-    export CA_HTML_ROOT_TITLE=$(openssl x509 -noout -subject -in ca/ca.crt -nameopt multiline | grep commonName | cut -d "=" -f 2-)
-    export CA_HTML_ROOT_NAME=$(echo $CA_HTML_ROOT_TITLE | sed 's/\s\+/_/g')
-    export CA_HTML_ROOT_HASH=$(openssl x509 -noout -fingerprint -sha1 -in ca/ca.crt | cut -d '=' -f 2-)
+    CA_HTML_ROOT_TITLE=$(openssl x509 -noout -subject -in ca/ca.crt -nameopt multiline | grep commonName | cut -d "=" -f 2-)
+    CA_HTML_ROOT_NAME=$(echo $CA_HTML_ROOT_TITLE | sed 's/\s\+/_/g')
+    CA_HTML_ROOT_HASH=$(openssl x509 -noout -fingerprint -sha1 -in ca/ca.crt | cut -d '=' -f 2-)
 
 
     template "${BIN_DIR}/templates/root_index.tpl" "html/ca/index.html"
@@ -78,13 +78,15 @@ if openssl verify -CAfile ca/ca.crt ca/ca.crt >/dev/null 2>&1; then
 else
     echo -e "$NOTE Creating index.html for sign CA"
 
-    export CA_HTML_ROOT_TITLE=$(openssl x509 -noout -subject -in ca/root.crt -nameopt multiline | grep commonName | cut -d "=" -f 2-)
-    export CA_HTML_ROOT_NAME=$(echo $CA_HTML_ROOT_TITLE | sed 's/\s\+/_/g')
-    export CA_HTML_ROOT_HASH=$(openssl x509 -noout -fingerprint -sha1 -in ca/root.crt | cut -d '=' -f 2-)
+    CA_HTML_ROOT_TITLE=$(openssl x509 -noout -subject -in ca/root.crt -nameopt multiline | grep commonName | cut -d "=" -f 2-)
+    CA_HTML_ROOT_NAME=$(echo $CA_HTML_ROOT_TITLE | sed 's/\s\+/_/g')
+    CA_HTML_ROOT_HASH=$(openssl x509 -noout -fingerprint -sha1 -in ca/root.crt | cut -d '=' -f 2-)
+    export CA_HTML_ROOT_HASH
 
-    export CA_HTML_SIGN_TITLE=$(openssl x509 -noout -subject -in ca/ca.crt -nameopt multiline | grep commonName | cut -d "=" -f 2-)
-    export CA_HTML_SIGN_NAME=$(echo $CA_HTML_SIGN_TITLE | sed 's/\s\+/_/g')
-    export CA_HTML_SIGN_HASH=$(openssl x509 -noout -fingerprint -sha1 -in ca/ca.crt | cut -d '=' -f 2-)
+    CA_HTML_SIGN_TITLE=$(openssl x509 -noout -subject -in ca/ca.crt -nameopt multiline | grep commonName | cut -d "=" -f 2-)
+    CA_HTML_SIGN_NAME=$(echo $CA_HTML_SIGN_TITLE | sed 's/\s\+/_/g')
+    CA_HTML_SIGN_HASH=$(openssl x509 -noout -fingerprint -sha1 -in ca/ca.crt | cut -d '=' -f 2-)
+    export CA_HTML_SIGN_HASH
 
 
     template "${BIN_DIR}/templates/sign_index.tpl" "html/ca/index.html"

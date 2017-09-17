@@ -51,6 +51,7 @@ fi
 PARENT="${BIN_DIR}/.."
 CA_NAME="$( basename "${CA_DIR}" )"
 CA_PATH="$( fullpath "${CA_DIR}")"
+export CA_PATH
 
 echo
 echo -e "$NOTE Creating new signing sub-CA in '${CA_DIR}'"
