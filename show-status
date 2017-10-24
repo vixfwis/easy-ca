@@ -11,15 +11,15 @@ set -o pipefail
 
 umask 0077
 
-BIN_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-source "${BIN_DIR}/functions"
-source "${BIN_DIR}/defaults.conf"
+BIN_DIR="$( cd "$( dirname "$BASH_SOURCE[0]" )" && pwd )"
+source "$BIN_DIR/functions"
+source "$BIN_DIR/defaults.conf"
 
-ROOT_DIR="$(readlink -e "${BIN_DIR}/..")"
+ROOT_DIR="$(readlink -e "$BIN_DIR/..")"
 
 echo -e "$NOTE Checking direcory $ROOT_DIR  ..."
 
-if [ -L "${BIN_DIR}/functions" ]; then
+if [ -L "$BIN_DIR/functions" ]; then
     echo -e "$NOTE Symlinked toolchain (dev mode)"
 else
     echo -e "$NOTE Standalone toolchain"
@@ -145,54 +145,6 @@ echo -e "$NOTE     Bits                       $(echo "$cert_txt" | grep 'Public-
 srl=$(cat "$ROOT_DIR/ca/db/crt.srl")
 certs=$((10#$srl - rootCA - 1))
 echo -e "$NOTE     Signed Certificates        " $certs
-skip=$rootCA
-if [ $certs -gt 0 ]; then
-    num=1
-    echo
-    echo -e "$NOTE       id :: Valid until              :: revoked :: type    :: sha1 hash                                                   :: subject"
-    while read -r line; do
-        if [ $skip -eq 1 ]; then
-            skip=0
-        else
-
-            if [[ "$line" == "V"* ]]; then
-                ca_number=$(echo "$line" | tr -s ' \t' ' ' | cut -d ' ' -f 3)
-                revoked="no     "
-            else
-                ca_number=$(echo "$line" | tr -s ' \t' ' ' | cut -d ' ' -f 4)
-                revoked="yes    "
-            fi
-
-            txt=$(openssl x509 -in "$ROOT_DIR/ca/archive/$ca_number.pem" -noout -text)
-
-            server_cert=$(echo "$txt" | grep -c 'TLS Web Server Authentication') || true
-            sign_cert=$(echo "$txt" | grep -c 'Certificate Sign') || true
-            client_cert=$(echo "$txt" | grep -c 'TLS Web Client Authentication') || true
-            valid_until=$(echo "$txt" | grep 'Not After :' | cut -d ':' -f2- | sed -e 's/^[[:space:]]*//')
-
-            if [ "$server_cert" -eq 1 ]; then
-                type="server "
-            elif [ "$sign_cert" -eq 1 ]; then
-                type="signing"
-            elif [ "$client_cert" -eq 1 ]; then
-                type="client "
-            else
-                echo -e "$ERR unknown certificate type!!"
-                exit 2
-            fi
-
-            sha1_hash=$(openssl x509 -noout -fingerprint -sha1 -in "$ROOT_DIR/ca/archive/$ca_number.pem" | cut -d '=' -f 2-)
-
-            subj=$(openssl x509 -noout -in "$ROOT_DIR/ca/archive/$ca_number.pem" -subject | cut -d '=' -f 2-)
-
-            echo -e "$NOTE       $ca_number :: $valid_until :: $revoked :: $type :: $sha1_hash :: $subj"
-        fi
-        num=$((num+1))
-    done < "$ROOT_DIR/ca/db/certificate.db"
-    echo
-fi
-revoked_lists=$(($(cat "$ROOT_DIR/ca/db/crl.srl") - 1))
-echo -e "$NOTE     Revoke Certificates Lists  "  $revoked_lists
 
 if ! openssl crl -in "$ROOT_DIR/ca/ca.crl" -CAfile "$CA_CRT" >/dev/null 2>&1; then
     echo -e "$ERR Certificate revocation list not valid!"
@@ -205,5 +157,78 @@ else
     revoked_certs=$(openssl crl -in "$ROOT_DIR/ca/ca.crl" -text -noout | grep -c 'Revocation Date: ')
 fi
 echo -e "$NOTE     Revoked Certificates        $revoked_certs"
+
+revoked_lists=$(($(cat "$ROOT_DIR/ca/db/crl.srl") - 1))
+echo -e "$NOTE     Revoke Certificates Lists  "  $revoked_lists
+
+
+skip=$rootCA
+if [ $certs -gt 0 ]; then
+    num=1
+    echo
+    while read -r line; do
+        if [ $skip -eq 1 ]; then
+            skip=0
+        else
+
+
+            if [[ "$line" == "V"* ]]; then
+                ca_number=$(echo "$line" | tr -s ' \t' ' ' | cut -d ' ' -f 3)
+                revoked="no"
+            else
+                ca_number=$(echo "$line" | tr -s ' \t' ' ' | cut -d ' ' -f 4)
+                revoked="yes"
+            fi
+
+            ca_cname=$(openssl x509 -noout -subject -in "$ROOT_DIR/ca/archive/$ca_number.pem" -nameopt multiline | grep -P '^\s+commonName' | cut -d '=' -f 2-)
+
+            txt=$(openssl x509 -in "$ROOT_DIR/ca/archive/$ca_number.pem" -noout -text)
+
+            server_cert=$(echo "$txt" | grep -c 'TLS Web Server Authentication') || true
+            sign_cert=$(echo "$txt" | grep -c 'Certificate Sign') || true
+            client_cert=$(echo "$txt" | grep -c 'TLS Web Client Authentication') || true
+            valid_since=$(echo "$txt" | grep 'Not Before:' | cut -d ':' -f2- | sed -e 's/^[[:space:]]*//')
+            valid_until=$(echo "$txt" | grep 'Not After :' | cut -d ':' -f2- | sed -e 's/^[[:space:]]*//')
+            bits=$(echo "$txt" | grep 'Public-Key:' | cut -d ':' -f2 | tr -d "()")
+
+            if [ "$server_cert" -eq 1 ]; then
+                type="server"
+                san="                SAN:            $(echo "$txt" | grep 'DNS:' | sed -e 's/^[[:space:]]*//')\n"
+            elif [ "$sign_cert" -eq 1 ]; then
+                type="signing"
+                san=""
+            elif [ "$client_cert" -eq 1 ]; then
+                type="client"
+                san=""
+            else
+                echo -e "$ERR unknown certificate type!!"
+                exit 2
+            fi
+
+            sha1_hash=$(openssl x509 -noout -fingerprint -sha1 -in "$ROOT_DIR/ca/archive/$ca_number.pem" | cut -d '=' -f 2-)
+
+            subj=$(openssl x509 -noout -in "$ROOT_DIR/ca/archive/$ca_number.pem" -subject | cut -d '=' -f 2-)
+
+
+            echo -e -n "$NOTE       $ca_number - $type -$ca_cname"
+            if [ $revoked = "yes" ]; then
+                echo " - revoked"
+            else
+                echo
+            fi
+            echo -e "                Subject:        $subj"
+            echo -e -n "$san"
+            echo -e "                Revoked:        $revoked"
+            echo -e "                Valid since:    $valid_since"
+            echo -e "                Valid until:    $valid_until"
+            echo -e "                Bits:          $bits"
+            echo -e "                Type:           $type"
+            echo -e "                SHA1 hash:      $sha1_hash"
+            echo -e ""
+
+        fi
+        num=$((num+1))
+    done < "$ROOT_DIR/ca/db/certificate.db"
+fi
 
 echo -e "$SUCC Status finished."
