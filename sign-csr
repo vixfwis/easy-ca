@@ -72,8 +72,8 @@ else
     SAFE_NAME=$(echo "$CSR_CERT_CN" | sed 's/\*/star/g' | sed 's/[^A-Za-z0-9-]/-/g')
 fi
 
-if [ -d "certs/clients/$SAFE_NAME" ]; then
-    echo -e "$ERR Configuration already exist for '$CSR_CERT_CN' ($SAFE_NAME), exiting."
+if [ -f "certs/clients/$SAFE_NAME"/"$SAFE_NAME".crt ]; then
+    echo -e "$ERR Certificate already exist for '$CSR_CERT_CN' ($SAFE_NAME), exiting."
     exit 1
 fi
 
@@ -91,15 +91,15 @@ openssl rsa -check \
             -passin env:CA_PASS \
             -noout
 
-trap 'rm -Rf "certs/clients/$SAFE_NAME"' 0
-mkdir "certs/clients/$SAFE_NAME"
+echo -e "$NOTE Creating client directory certs/clients/$SAFE_NAME"
+mkdir -p "certs/clients/$SAFE_NAME"
 
 # Generate the client cert openssl config
 export SAN="email:$CSR_CERT_MAIL"
 export CA_USERNAME="$CSR_CERT_CN"
 export CA_CERT_MAIL="$CSR_CERT_MAIL"
 
-cp "$CSR_PATH" "certs/clients/$SAFE_NAME/$SAFE_NAME.csr"
+cp --suffix ".old" -b -f -u "$CSR_PATH" "certs/clients/$SAFE_NAME/$SAFE_NAME.csr"
 template "$BIN_DIR/templates/client.tpl" "certs/clients/$SAFE_NAME/$SAFE_NAME.conf"
 
 echo -e "$NOTE Creating the client certificate (overwriting C,ST,L,O,OU DN fields)."
