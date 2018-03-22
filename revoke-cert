@@ -45,15 +45,25 @@ elif [ "${CERT}" = "" ]; then
     echo -e -n "$ERR " && usage && exit 1
 fi
 
-echo -e "$SUCC Revoking certificate '${CERT}'"
+# Fully-qualify path to cert
+CERT_PATH=$( fullpath "${CERT}" )
 
-if [ ! -f "${CERT}" ]; then
-    echo -e "$ERR Can not find certificate '${CERT}', exiting."
+echo -e "$SUCC Revoking certificate '${CERT_PATH}'"
+
+if [ ! -f "${CERT_PATH}" ]; then
+    echo -e "$ERR Can not find certificate '${CERT_PATH}', exiting."
     exit 1
 fi
 
-# Fully-qualify path to cert
-CERT_PATH=$( fullpath "${CERT}" )
+echo -e "$NOTE Verifying trusted chain"
+
+openssl verify -CAfile ca/chain.pem "$CERT_PATH"
+issuer_hash=$(openssl x509 -in "$CERT_PATH" -issuer_hash -noout)
+ca_hash=$(openssl x509 -in ca/ca.crt -hash -noout)
+if [ "x$issuer_hash" != "x$ca_hash" ]; then
+    echo -e "$ERR certificate was not issued by current CA, exiting. ($issuer_hash vs. $ca_hash)"
+    exit 1
+fi
 
 pushd "${BIN_DIR}/.." > /dev/null
 
@@ -117,4 +127,4 @@ openssl ca -gencrl \
 
 popd > /dev/null
 
-echo -e "$SUCC Server certificate '${CERT}' revoked."
+echo -e "$SUCC Server certificate '${CERT_PATH}' revoked."
