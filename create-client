@@ -53,7 +53,7 @@ echo -e "$NOTE Creating new client certificate for '$CLIENT_NAME'"
 pushd "${BIN_DIR}/.." > /dev/null
 
 if [ -d "certs/clients/$SAFE_NAME" ]; then
-    echo -e "$ERR Configuration already exists for '$CLIENT_NAME', exiting."
+    echo -e "$ERR Configuration already exists for '$CLIENT_NAME' ($SAFE_NAME), exiting."
     exit 1
 fi
 
@@ -72,10 +72,10 @@ trap 'rm -Rf "certs/clients/$SAFE_NAME"' 0
 mkdir "certs/clients/$SAFE_NAME"
 
 # Generate the client cert openssl config
-export SAN=""
 export CA_USERNAME="${CLIENT_NAME}"
 export CA_CERT_MAIL=""
 ask_client_cert_questions
+export SAN="email:$CA_CERT_MAIL"
 template "${BIN_DIR}/templates/client.tpl" "certs/clients/$SAFE_NAME/$SAFE_NAME.conf"
 
 echo -e "$NOTE Creating the client key and csr"

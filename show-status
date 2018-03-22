@@ -143,7 +143,7 @@ echo -e "$NOTE     Valid until                $(echo "$cert_txt" | grep 'Not Aft
 echo -e "$NOTE     Bits                       $(echo "$cert_txt" | grep 'Public-Key:' | cut -d ':' -f2 | tr -d "()")"
 
 srl=$(cat "$ROOT_DIR/ca/db/crt.srl")
-certs=$((10#$srl - rootCA - 1))
+certs=$((16#$srl - rootCA - 1))
 echo -e "$NOTE     Signed Certificates        " $certs
 
 if ! openssl crl -in "$ROOT_DIR/ca/ca.crl" -CAfile "$CA_CRT" >/dev/null 2>&1; then
@@ -199,7 +199,11 @@ if [ $certs -gt 0 ]; then
                 san=""
             elif [ "$client_cert" -eq 1 ]; then
                 type="client"
-                san=""
+                if [ $(echo "$txt" | grep -c 'email:') -eq 0 ]; then
+                    san="                SAN:            no email address found\n"
+                else
+                    san="                SAN:            $(echo "$txt" | grep 'email:' | sed -e 's/^[[:space:]]*//')\n"
+                fi
             else
                 echo -e "$ERR unknown certificate type!!"
                 exit 2

@@ -269,5 +269,8 @@ ask_client_cert_questions() {
     read -r CERT_MAIL
     if [ -n "${CERT_MAIL}" ]; then
         CA_CERT_MAIL="${CERT_MAIL}"
+    else
+        echo -e "$ERR No email address supplied, exiting."
+        exit 1
     fi
 }
