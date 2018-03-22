@@ -1,0 +1,126 @@
+#!/bin/bash
+
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+# Derek Moore <derek.moore@gmail.com>
+# Christian Göttsche <cgzones@googlemail.com>
+# tomberek
+
+set -eu
+set -o pipefail
+
+umask 0077
+
+BIN_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+source "${BIN_DIR}/functions"
+source "${BIN_DIR}/defaults.conf"
+
+usage() {
+    echo "Usage: $0 -c CSR_PATH -F NAME"
+    echo "Signs a client certificate located at CSR_PATH"
+    echo
+    echo "Options:"
+    echo "    -c CSR_PATH   Path to client certificate request"
+    echo
+    echo "    -F NAME       force to use custom SAFE_NAME"
+    echo "                  useful for name clahses, use with caution"
+    echo
+}
+
+if [ ! -f ca/ca.crt ]; then
+    echo -e "$ERR Must be run inside a CA directory!"
+    exit 2
+fi
+
+CSR_PATH=
+CSR_NAME=
+
+while getopts c:F:h FLAG; do
+    case $FLAG in
+        c) CSR_PATH=${OPTARG} ;;
+        F) CSR_NAME=${OPTARG} ;;
+        h) echo -e -n "$SUCC " && usage && exit 0 ;;
+        *) echo -e -n "$ERR " && usage && exit 2 ;;
+    esac
+done
+
+if [ $OPTIND -le $# ]; then
+    echo -e -n "$ERR " && usage && exit 2
+elif [ "$CSR_PATH" = "" ]; then
+    echo -e -n "$ERR " && usage && exit 1
+fi
+
+openssl req -text -noout -verify -in "$CSR_PATH"
+
+export CSR_SUBJ=$(openssl req -utf8 -in "$CSR_PATH" -noout -subject -nameopt multiline)
+export CSR_CERT_CN=$(echo "$CSR_SUBJ" | grep -P '^\s+commonName' | cut -d '=' -f 2- | sed -e 's/^[[:space:]]*//')
+export CSR_CERT_MAIL=$(echo "$CSR_SUBJ" | grep -P '^\s+emailAddress' | cut -d '=' -f 2- | sed -e 's/^[[:space:]]*//')
+if [ -z "$CSR_CERT_CN" ]; then
+    echo -e "$ERR No name supplied in request, exiting."
+    exit 1
+fi
+if [ -z "$CSR_CERT_MAIL" ]; then
+    echo -e "$ERR No email address supplied in request, exiting."
+    exit 1
+fi
+
+if [ -n "$CSR_NAME" ]; then
+    SAFE_NAME="$CSR_NAME"
+else
+    SAFE_NAME=$(echo "$CSR_CERT_CN" | sed 's/\*/star/g' | sed 's/[^A-Za-z0-9-]/-/g')
+fi
+
+if [ -d "certs/clients/$SAFE_NAME" ]; then
+    echo -e "$ERR Configuration already exist for '$CSR_CERT_CN' ($SAFE_NAME), exiting."
+    exit 1
+fi
+
+echo -e "$NOTE Signing CSR for '$CSR_CERT_CN' with email address '$CSR_CERT_MAIL'"
+
+pushd "${BIN_DIR}/.." > /dev/null
+
+echo
+echo -e -n "$INPUT Enter passphase for signing CA key (verify the above informations!):"
+read -r -s PASS
+echo
+export CA_PASS="$PASS"
+openssl rsa -check \
+            -in ca/private/ca.key \
+            -passin env:CA_PASS \
+            -noout
+
+trap 'rm -Rf "certs/clients/$SAFE_NAME"' 0
+mkdir "certs/clients/$SAFE_NAME"
+
+# Generate the client cert openssl config
+export SAN="email:$CSR_CERT_MAIL"
+export CA_USERNAME="$CSR_CERT_CN"
+export CA_CERT_MAIL="$CSR_CERT_MAIL"
+
+cp "$CSR_PATH" "certs/clients/$SAFE_NAME/$SAFE_NAME.csr"
+template "$BIN_DIR/templates/client.tpl" "certs/clients/$SAFE_NAME/$SAFE_NAME.conf"
+
+echo -e "$NOTE Creating the client certificate (overwriting C,ST,L,O,OU DN fields)."
+
+# Create the client certificate overwriting CSR values
+openssl ca -batch -notext \
+           -config ca/ca.conf \
+           -in "certs/clients/$SAFE_NAME/$SAFE_NAME.csr" \
+           -out "certs/clients/$SAFE_NAME/$SAFE_NAME.crt" \
+           -extensions client_ext \
+           -subj "/C=${CA_CERT_C}/ST=${CA_CERT_ST}/L=${CA_CERT_L}/O=${CA_CERT_O}/OU=${CA_CERT_OU}/CN=${CA_USERNAME}/emailAddress=${CSR_CERT_MAIL}" \
+           -passin env:CA_PASS
+
+echo -e "$NOTE Verifying trusted chain"
+
+openssl verify -CAfile ca/chain.pem "certs/clients/$SAFE_NAME/$SAFE_NAME.crt"
+
+popd > /dev/null
+
+unset CA_PASS
+
+trap 0
+
+echo -e "$SUCC Client certificate for '$CSR_CERT_CN' created."

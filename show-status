@@ -191,13 +191,13 @@ if [ $certs -gt 0 ]; then
             valid_until=$(echo "$txt" | grep 'Not After :' | cut -d ':' -f2- | sed -e 's/^[[:space:]]*//')
             bits=$(echo "$txt" | grep 'Public-Key:' | cut -d ':' -f2 | tr -d "()")
 
-            if [ "$server_cert" -eq 1 ]; then
+            if [ "$server_cert" -ge 1 ]; then
                 type="server"
                 san="                SAN:            $(echo "$txt" | grep 'DNS:' | sed -e 's/^[[:space:]]*//')\n"
-            elif [ "$sign_cert" -eq 1 ]; then
+            elif [ "$sign_cert" -ge 1 ]; then
                 type="signing"
                 san=""
-            elif [ "$client_cert" -eq 1 ]; then
+            elif [ "$client_cert" -ge 1 ]; then
                 type="client"
                 if [ $(echo "$txt" | grep -c 'email:') -eq 0 ]; then
                     san="                SAN:            no email address found\n"

@@ -11,6 +11,7 @@ export BINARIES_ROOT="
 create-signing-ca
 create-server
 create-client
+sign-csr
 revoke-cert
 functions
 show-status
@@ -28,6 +29,7 @@ sign_index.tpl
 export BINARIES_SIGN="
 create-server
 create-client
+sign-csr
 revoke-cert
 functions
 show-status
