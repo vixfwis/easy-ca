@@ -157,6 +157,7 @@ else
     echo -e "$NOTE Copying toolchain"
     CP_CMD='cp'
 fi
+$CP_CMD "${BIN_DIR}/../README.md" README.md
 for BIN in ${BINARIES_SIGN}; do
     $CP_CMD "${BIN_DIR}/${BIN}" bin/
 done

@@ -4,7 +4,6 @@ OpenSSL wrapper scripts for managing basic CA functions
 [![Test CI Status](https://travis-ci.org/cgzones/easy-ca.svg?branch=develop)](https://travis-ci.org/cgzones/easy-ca)
 [![GitHub License](https://img.shields.io/badge/License-MPL%202.0-brightgreen.svg)](https://raw.githubusercontent.com/cgzones/easy-ca/master/LICENSE)
 
-
 A suite of bash scripts for automating very basic OpenSSL Certificate Authority operations:
 * Creating Root CAs
 * Creating Intermediate Signing CAs
@@ -12,9 +11,31 @@ A suite of bash scripts for automating very basic OpenSSL Certificate Authority 
 * Creating Client certificates
 * Revoking certificates and maintaining CRLs
 
-
-
 ## Usage
+
+### tl;dr
+
+#### Scripts:
+
+| Name              | Description                                                       |
+| ----------------- | ----------------------------------------------------------------- |
+| create-client     | Create a client certificate                                       |
+| create-root-ca    | Create a root signing CA                                          |
+| create-server     | Create a server certificate                                       |
+| create-signing-ca | Create an intermediate signing CA inside a root CA                |
+| gen-html          | Create a shareable html directory structure for publishing the CA |
+| revoke-cert       | Revoke a (client|server) certificate                              |
+| show-status       | Show the infos about the current CA (signed certificates...)      |
+| sign-csr          | Sign an imported client certificate                               |
+
+#### Important files:
+
+| Path                    | Description                              |
+| ----------------------- | ---------------------------------------- |
+| bin/                    | Script directory                         |
+| ca/ca.crt               | CA certificate                           |
+| ca/chain.pem            | CA chain certificate                     |
+| certs/(client\|server)/ | Parent directory for signed certificates |
 
 ### Create a new Root CA
 
@@ -31,8 +52,6 @@ $ROOT_CA_DIR/ca/ca.crt
 $ROOT_CA_DIR/ca/private/ca.key
 $ROOT_CA_DIR/ca/ca.crl
 ```
-
-
 
 ### (Optional) Create an Intermediate Signing CA
 
@@ -52,8 +71,6 @@ $SIGNING_CA_DIR/ca/root.crt
 $SIGNING_CA_DIR/ca/chain.pem
 ```
 
-
-
 ### Issue a Server Certificate
 
 Running **create-server** from within any CA installation will issue a new server (serverAuth) certificate:
@@ -72,8 +89,6 @@ $CA_DIR/certs/server/FQDN-Description/FQDN-Description.key
 $CA_DIR/certs/server/FQDN-Description/FQDN-Description.csr
 ```
 
-
-
 ### Issue a Client Certificate
 
 Running **create-client** from within any CA installation will issue a new client (clientAuth) certificate:
@@ -90,8 +105,6 @@ $CA_DIR/certs/clients/user-domain-com/user-domain-com.key
 $CA_DIR/certs/clients/user-domain-com/user-domain-com.csr
 ```
 
-
-
 ### Revoke a Certificate
 
 Running **revoke-cert** from within a CA installation allows you to revoke a certificate issued by that CA and update the CRL:
@@ -106,8 +119,6 @@ $CA_DIR/bin/revoke-cert -c $CA_DIR/certs/server/FQDN-Description/FQDN-Descriptio
 $CA_DIR/ca/ca.crl
 ```
 
-
-
 ## Caveats
 
 These scripts are very simple, and make some hard-coded assumptions about behavior and configuration:
@@ -119,8 +130,6 @@ These scripts are very simple, and make some hard-coded assumptions about behavi
 * Client and Server certificates have 2048-bit RSA keys (configurable in *defaults.conf*)
 * Client and Server keys are not encrypted
 * There is no wrapper *yet* for renewing certificates
-
-
 
 ## License
 
