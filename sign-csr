@@ -72,7 +72,7 @@ else
     SAFE_NAME=$(echo "$CSR_CERT_CN" | sed 's/\*/star/g' | sed 's/[^A-Za-z0-9-]/-/g')
 fi
 
-if [ -f "certs/clients/$SAFE_NAME"/"$SAFE_NAME".crt ]; then
+if [ -f "certs/clients/$SAFE_NAME/$SAFE_NAME.crt" ]; then
     echo -e "$ERR Certificate already exist for '$CSR_CERT_CN' ($SAFE_NAME), exiting."
     exit 1
 fi
@@ -120,7 +120,5 @@ openssl verify -CAfile ca/chain.pem "certs/clients/$SAFE_NAME/$SAFE_NAME.crt"
 popd > /dev/null
 
 unset CA_PASS
-
-trap 0
 
 echo -e "$SUCC Client certificate for '$CSR_CERT_CN' created."
