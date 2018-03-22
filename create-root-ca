@@ -17,10 +17,11 @@ source "${BIN_DIR}/defaults.conf"
 
 usage() {
     echo "Usage: $0 [-l] -d CA_DIR"
-    echo "Initializes a new root CA in CA_DIR"
+    echo "Initializes a new root CA in the directory CA_DIR"
     echo
     echo "Options:"
     echo "    -d CA_DIR  Target directory to be created and initialized"
+    echo "               Must not exist yet"
     echo "    -l         Symlink toolchain (designed for development)"
     echo
 }

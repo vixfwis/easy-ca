@@ -18,7 +18,7 @@ source "${BIN_DIR}/functions"
 source "${BIN_DIR}/defaults.conf"
 
 usage() {
-    echo "Usage: $0 -c CSR_PATH -F NAME"
+    echo "Usage: $0 -c CSR_PATH [-F NAME]"
     echo "Signs a client certificate located at CSR_PATH"
     echo
     echo "Options:"
