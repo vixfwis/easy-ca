@@ -67,7 +67,7 @@ if [ -z "$CSR_CERT_MAIL" ]; then
 fi
 
 if [ -n "$CSR_NAME" ]; then
-    SAFE_NAME="$CSR_NAME"
+    SAFE_NAME=$(echo "$CSR_NAME" | sed 's/\*/star/g' | sed 's/[^A-Za-z0-9-]/-/g')
 else
     SAFE_NAME=$(echo "$CSR_CERT_CN" | sed 's/\*/star/g' | sed 's/[^A-Za-z0-9-]/-/g')
 fi
