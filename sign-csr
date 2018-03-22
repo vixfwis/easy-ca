@@ -1,0 +1,119 @@
+#!/bin/bash
+
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+# Derek Moore <derek.moore@gmail.com>
+# Christian Göttsche <cgzones@googlemail.com>
+
+set -eu
+set -o pipefail
+
+umask 0077
+
+BIN_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+source "${BIN_DIR}/functions"
+source "${BIN_DIR}/defaults.conf"
+
+usage() {
+    echo "Usage: $0 -c CLIENT_NAME"
+    echo "Signs a client certificate for CLIENT_NAME"
+    echo
+    echo "Options:"
+    echo "    -c CLIENT_NAME  Client name (and directory) for the csr and new cert"
+    echo
+}
+
+if [ ! -f ca/ca.crt ]; then
+    echo -e "$ERR Must be run inside a CA directory!"
+    exit 2
+fi
+
+CLIENT_NAME=
+
+while getopts c:h FLAG; do
+    case $FLAG in
+        c) CLIENT_NAME=${OPTARG} ;;
+        h) echo -e -n "$SUCC " && usage && exit 0 ;;
+        *) echo -e -n "$ERR " && usage && exit 2 ;;
+    esac
+done
+
+if [ $OPTIND -le $# ]; then
+    echo -e -n "$ERR " && usage && exit 2
+elif [ "${CLIENT_NAME}" = "" ]; then
+    echo -e -n "$ERR " && usage && exit 1
+fi
+
+SAFE_NAME=$(echo "${CLIENT_NAME}" | sed 's/\*/star/g' | sed 's/[^A-Za-z0-9-]/-/g')
+
+echo -e "$NOTE Signing CSR for '$CLIENT_NAME'"
+
+pushd "${BIN_DIR}/.." > /dev/null
+
+if [ ! -d "certs/clients/$SAFE_NAME" ]; then
+    echo -e "$ERR Configuration folder does not exist for '$CLIENT_NAME', exiting."
+    exit 1
+fi
+
+
+echo
+echo -e -n "$INPUT Enter passphase for signing CA key: "
+read -r -s PASS
+echo
+export CA_PASS="${PASS}"
+openssl rsa -check \
+            -in ca/private/ca.key \
+            -passin env:CA_PASS \
+            -noout
+
+# Generate the client cert openssl config
+export SAN=""
+export CA_USERNAME="${CLIENT_NAME}"
+export CA_CERT_MAIL=""
+
+if [ ! -f "certs/clients/$SAFE_NAME/$SAFE_NAME.csr" ]; then
+    echo -e "$ERR Configuration folder does not contain '${CLIENT_NAME}.csr', exiting."
+    exit 1
+fi
+export CSR_SUBJ=$(openssl req -in certs/clients/"$SAFE_NAME"/"$SAFE_NAME".csr -noout -subject)
+#export CA_CERT_C=$(echo "$CSR_SUBJ" | sed -E "s#.*/C=([^/]*?)/*.*#\1#")
+#export CA_CERT_ST=$(echo "$CSR_SUBJ" | sed -E "s#.*/ST=([^/]*?)/*.*#\1#")
+#export CA_CERT_L=$(echo "$CSR_SUBJ" | sed -E "s#.*/L=([^/]*?)/*.*#\1#")
+#export CA_CERT_O=$(echo "$CSR_SUBJ" | sed -E "s#.*/O=([^/]*?)/*.*#\1#")
+#export CA_CERT_OU=$(echo "$CSR_SUBJ" | sed -E "s#.*/OU=([^/]*?)/*.*#\1#")
+export CA_CERT_MAIL=$(echo "$CSR_SUBJ" | sed -E "s#.*/emailAddress=([^/]*?)/*.*#\1#")
+
+if [ -z "${CA_CERT_MAIL}" ]; then
+    echo -e -n "$INPUT No email address for this CSR, please enter one. []: "
+    read -r CA_CERT_MAIL
+fi
+if [ -z "${CA_CERT_MAIL}" ]; then
+    echo -e "$ERR No email address, exiting."
+fi
+
+template "${BIN_DIR}/templates/client.tpl" "certs/clients/$SAFE_NAME/$SAFE_NAME.conf"
+
+echo -e "$NOTE Creating the client certificate (overwriting C,ST,L,O,OU DN fields)."
+
+# Create the client certificate overwriting CSR values
+openssl ca -batch -notext \
+           -config ca/ca.conf \
+           -in "certs/clients/$SAFE_NAME/$SAFE_NAME.csr" \
+           -out "certs/clients/$SAFE_NAME/$SAFE_NAME.crt" \
+           -extensions client_ext \
+           -subj "/C=${CA_CERT_C}/ST=${CA_CERT_ST}/L=${CA_CERT_L}/O=${CA_CERT_O}/OU=${CA_CERT_OU}/CN=${CA_USERNAME}/emailAddress=${CA_CERT_MAIL}" \
+           -passin env:CA_PASS
+
+echo -e "$NOTE Verifying trusted chain"
+
+openssl verify -CAfile ca/chain.pem "certs/clients/$SAFE_NAME/$SAFE_NAME.crt"
+
+popd > /dev/null
+
+unset CA_PASS
+
+trap 0
+
+echo -e "$SUCC Client certificate for '${CLIENT_NAME}' created."
