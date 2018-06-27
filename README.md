@@ -127,7 +127,7 @@ These scripts are very simple, and make some hard-coded assumptions about behavi
 * Root and Intermediate CA keys are always encrypted
 * Only one level of Intermediate CA is supported
 * Client and Server certificates have a 730-day lifetime (configurable in *templates/(server|client).tpl*)
-* Client and Server certificates have 2048-bit RSA keys (configurable in *defaults.conf*)
+* Client and Server certificates have 3072-bit RSA keys (configurable in *defaults.conf*)
 * Client and Server keys are not encrypted
 * There is no wrapper *yet* for renewing certificates
 
