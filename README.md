@@ -24,7 +24,7 @@ A suite of bash scripts for automating very basic OpenSSL Certificate Authority 
 | create-server     | Create a server certificate                                       |
 | create-signing-ca | Create an intermediate signing CA inside a root CA                |
 | gen-html          | Create a shareable html directory structure for publishing the CA |
-| revoke-cert       | Revoke a (client|server) certificate                              |
+| revoke-cert       | Revoke a (client\|server) certificate                             |
 | show-status       | Show the infos about the current CA (signed certificates...)      |
 | sign-csr          | Sign an imported client certificate                               |
 
