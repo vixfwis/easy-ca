@@ -107,7 +107,7 @@ authorityInfoAccess     = @issuer_info
 crlDistributionPoints   = @crl_info
 subjectAltName          = $ENV::SAN
 
-[ client_ext ]
+[ clients_ext ]
 keyUsage                = critical,digitalSignature
 basicConstraints        = critical,CA:false
 extendedKeyUsage        = critical,clientAuth

@@ -24,6 +24,8 @@ usage() {
     echo "Options:"
     echo "    -c CSR_PATH        Path to client certificate request"
     echo
+    echo "    -s                 Request is a server [default is client]"
+    echo
     echo "    -m CSR_CERT_MAIL   Email address to use in client certificate request"
     echo "                       Useful when using ykman which doesn't use email"
     echo
@@ -39,10 +41,12 @@ fi
 
 CSR_PATH=
 CSR_NAME=
+CSR_TYPE="clients"
 
 while getopts c:F:m:h FLAG; do
     case $FLAG in
         c) CSR_PATH=${OPTARG} ;;
+        s) CSR_TYPE="server" ;;
         F) CSR_NAME=${OPTARG} ;;
         m) CSR_CERT_MAIL=${OPTARG} ;;
         h) echo -e -n "$SUCC " && usage && exit 0 ;;
@@ -76,7 +80,7 @@ else
     SAFE_NAME=$(echo "$CSR_CERT_CN" | sed 's/\*/star/g' | sed 's/[^A-Za-z0-9-]/-/g')
 fi
 
-if [ -f "certs/clients/$SAFE_NAME/$SAFE_NAME.crt" ]; then
+if [ -f "certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.crt" ]; then
     echo -e "$ERR Certificate already exist for '$CSR_CERT_CN' ($SAFE_NAME), exiting."
     exit 1
 fi
@@ -104,18 +108,18 @@ openssl rsa \
             -noout \
             -passin env:CA_PASS
 
-echo -e "$NOTE Creating client directory certs/clients/$SAFE_NAME"
-mkdir -p "certs/clients/$SAFE_NAME"
+echo -e "$NOTE Creating $CSR_TYPE directory certs/$CSR_TYPE/$SAFE_NAME"
+mkdir -p "certs/$CSR_TYPE/$SAFE_NAME"
 
 # Generate the client cert openssl config
 export SAN="email:$CSR_CERT_MAIL"
 export CA_USERNAME="$CSR_CERT_CN"
 export CA_CERT_MAIL="$CSR_CERT_MAIL"
 
-cp --suffix ".old" -b -f -u "$CSR_PATH" "certs/clients/$SAFE_NAME/$SAFE_NAME.csr"
-template "$BIN_DIR/templates/clients.tpl" "certs/clients/$SAFE_NAME/$SAFE_NAME.conf"
+cp --suffix ".old" -b -f -u "$CSR_PATH" "certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.csr"
+template "$BIN_DIR/templates/$CSR_TYPE.tpl" "certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.conf"
 
-echo -e "$NOTE Creating the client certificate (overwriting C,ST,L,O,OU DN fields)."
+echo -e "$NOTE Creating the certificate (overwriting C,ST,L,O,OU DN fields)."
 
 # Create the client certificate overwriting CSR values
 openssl_engine_cmd="\
@@ -125,15 +129,15 @@ openssl_engine_cmd="\
 openssl ca -batch -notext \
            ${CA_ENABLE_ENGINE:+$openssl_engine_cmd} \
            -config ca/ca.conf \
-           -in "certs/clients/$SAFE_NAME/$SAFE_NAME.csr" \
-           -out "certs/clients/$SAFE_NAME/$SAFE_NAME.crt" \
-           -extensions client_ext \
+           -in "certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.csr" \
+           -out "certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.crt" \
+           -extensions ${CSR_TYPE}_ext \
            -subj "/C=${CA_CERT_C}/ST=${CA_CERT_ST}/L=${CA_CERT_L}/O=${CA_CERT_O}/OU=${CA_CERT_OU}/CN=${CA_USERNAME}/emailAddress=${CSR_CERT_MAIL}" \
            -passin env:CA_PASS
 
 echo -e "$NOTE Verifying trusted chain"
 
-openssl verify -CAfile ca/chain.pem "certs/clients/$SAFE_NAME/$SAFE_NAME.crt"
+openssl verify -CAfile ca/chain.pem "certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.crt"
 
 popd > /dev/null
 
