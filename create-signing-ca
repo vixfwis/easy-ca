@@ -135,7 +135,7 @@ if [[ -z $CA_ENABLE_ENGINE ]]; then
 
     openssl genrsa -out ca/private/ca.key -"${CA_KEY_ALG}" -passout env:CA_PASS "${CA_KEY_LENGTH_ROOTCA}"
     chmod 0400 ca/private/ca.key
-    openssl rsa -in ca/private/ca.key -pubout -out ca/ca.pub
+    openssl rsa -in ca/private/ca.key -pubout -out ca/ca.pub -passin env:CA_PASS
 else
     echo -e "$NOTE Signing sub-CA key should already exist via pkcs11 engine."
 fi

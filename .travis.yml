@@ -22,7 +22,6 @@ script:
       Bogus Inc. Certificate Authority
       rootCA_password
       rootCA_password
-      rootCA_password
       EOF
   - cd travis-ca/
   - |
@@ -58,7 +57,6 @@ script:
       Bogus Inc.
       Operations
       Bogus Inc. Certificate travis-signing
-      signCA_password
       signCA_password
       signCA_password
       EOF
