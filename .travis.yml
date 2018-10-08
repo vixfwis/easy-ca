@@ -22,6 +22,7 @@ script:
       Bogus Inc. Certificate Authority
       rootCA_password
       rootCA_password
+      rootCA_password
       EOF
   - cd travis-ca/
   - |
