@@ -311,7 +311,6 @@ function replace_crt(){
     fi
 }
 function init_engine(){
-    local SLOT=$1
     echo -e "$NOTE THIS WILL RESET YOUR YUBIKEY USING YKMAN"
     echo -e -n "$INPUT Do you wish to reset your device? [y/N]: "
     read -r SURE
