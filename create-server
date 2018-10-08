@@ -137,13 +137,11 @@ openssl rsa \
 
 if [ -z "$ENABLE_ENGINE" ]; then
     chmod 0400 "certs/server/$SAFE_NAME/$SAFE_NAME.key"
-    openssl rsa -in "certs/server/$SAFE_NAME/$SAFE_NAME.key" \ 
+    openssl rsa -in "certs/server/$SAFE_NAME/$SAFE_NAME.key" \
         -pubout -out "certs/server/$SAFE_NAME/$SAFE_NAME.pub"
 fi
 ssh-keygen -f "certs/server/$SAFE_NAME/$SAFE_NAME.pub" -i -mPKCS8 \
         | awk "{printf \$0;print \" ${SAFE_NAME}\"}" > "certs/server/$SAFE_NAME/$SAFE_NAME.ssh.pub"
-    
-
 
 echo -e "$NOTE Creating the server certificate"
 
