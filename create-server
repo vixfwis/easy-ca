@@ -140,7 +140,7 @@ if [ -z "$ENABLE_ENGINE" ]; then
     openssl rsa -in "certs/server/$SAFE_NAME/$SAFE_NAME.key" \ 
         -pubout -out "certs/server/$SAFE_NAME/$SAFE_NAME.pub"
 fi
-ssk-keygen -f "certs/server/$SAFE_NAME/$SAFE_NAME.pub" -i -mPKCS8 \
+ssh-keygen -f "certs/server/$SAFE_NAME/$SAFE_NAME.pub" -i -mPKCS8 \
         | awk "{printf \$0;print \" ${SAFE_NAME}\"}" > "certs/server/$SAFE_NAME/$SAFE_NAME.ssh.pub"
     
 

@@ -126,7 +126,7 @@ if [ -z "$ENABLE_ENGINE" ]; then
     openssl rsa -in "certs/clients/$SAFE_NAME/$SAFE_NAME.key" \ 
         -pubout -out "certs/clients/$SAFE_NAME/$SAFE_NAME.pub"
 fi
-ssk-keygen -f "certs/clients/$SAFE_NAME/$SAFE_NAME.pub" -i -mPKCS8 \
+ssh-keygen -f "certs/clients/$SAFE_NAME/$SAFE_NAME.pub" -i -mPKCS8 \
         | awk "{printf \$0;print \" ${SAFE_NAME}\"}" > "certs/clients/$SAFE_NAME/$SAFE_NAME.ssh.pub"
 
 echo -e "$NOTE Creating the client certificate"

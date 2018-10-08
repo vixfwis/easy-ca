@@ -112,7 +112,7 @@ if [[ -z $CA_ENABLE_ENGINE ]]; then
 else
     echo -e "$NOTE Root CA key should already exist via pkcs11 engine."
 fi
-ssk-keygen -f ca/ca.pub -i -mPKCS8 \
+ssh-keygen -f ca/ca.pub -i -mPKCS8 \
         | awk "{printf \$0;print \" ${CA_DIR}\"}" > ca/ca.ssh.pub
 
 echo -e "$NOTE Creating the root CA csr"
