@@ -61,20 +61,33 @@ if [ -n "${CERT_CN}" ]; then
     CA_CERT_CN="${CERT_CN}"
 fi
 
-echo
-echo -e -n "$INPUT Enter passphase for encrypting root CA key: "
-read -r -s PASS1
-echo
-if [[ ${#PASS1} -lt 4 ]]; then
-    echo -e "$ERR Passphrase is too short, please use at least 4 characters!"
-    exit 1
-fi
-echo -e -n "$INPUT Verifying - Enter passphase for encrypting root CA key: "
-read -r -s PASS2
-echo
-if [[ "${PASS1}" != "${PASS2}" ]]; then
-    echo -e "$ERR Passphrases did not match, exiting."
-    exit 1
+if [[ -n $CA_ENABLE_ENGINE ]]; then
+    init_engine 9c
+    # Slot 9c requires PIN entry on every operation.
+    # No need to ask for the PIN for re-use.
+    echo -e -n "$INPUT Enter PIN for signing root CA key: "
+    read -r -s PASS1
+    echo
+    if [[ ${#PASS1} -lt 4 ]]; then
+        echo -e "$ERR Passphrase is too short, please use at least 4 characters!"
+        exit 1
+    fi
+else
+    echo
+    echo -e -n "$INPUT Enter passphase for encrypting root CA key: "
+    read -r -s PASS1
+    echo
+    if [[ ${#PASS1} -lt 4 ]]; then
+        echo -e "$ERR Passphrase is too short, please use at least 4 characters!"
+        exit 1
+    fi
+    echo -e -n "$INPUT Verifying - Enter passphase for encrypting root CA key: "
+    read -r -s PASS2
+    echo
+    if [[ "${PASS1}" != "${PASS2}" ]]; then
+        echo -e "$ERR Passphrases did not match, exiting."
+        exit 1
+    fi
 fi
 
 export CA_PASS="${PASS1}"
@@ -88,38 +101,65 @@ pushd "${CA_DIR}" > /dev/null
 # Generate the root CA openssl config
 template "${BIN_DIR}/templates/root.tpl" "ca/ca.conf"
 
-echo -e "$NOTE Creating the root CA key (${CA_KEY_ALG} with ${CA_KEY_LENGTH_ROOTCA} bits)"
+# Create the signing CA key
+if [[ -z $CA_ENABLE_ENGINE ]]; then
+    echo -e "$NOTE Creating the root CA key (${CA_KEY_ALG} with ${CA_KEY_LENGTH_ROOTCA} bits)"
 
-openssl genrsa -out ca/private/ca.key -"${CA_KEY_ALG}" -passout env:CA_PASS "${CA_KEY_LENGTH_ROOTCA}"
-chmod 0400 ca/private/ca.key
+    openssl genrsa -out ca/private/ca.key -"${CA_KEY_ALG}" -passout env:CA_PASS "${CA_KEY_LENGTH_ROOTCA}"
+    chmod 0400 ca/private/ca.key
+else
+    echo -e "$NOTE Root CA key should already exist via pkcs11 engine."
+fi
 
 echo -e "$NOTE Creating the root CA csr"
 
-openssl req -new -batch \
-            -config ca/ca.conf \
-            -key ca/private/ca.key \
-            -out ca/ca.csr \
-            -passin env:CA_PASS
+openssl_engine_cmd="\
+    -engine pkcs11 \
+    -keyform engine \
+    -key pkcs11:object=SIGN%20key"
 
+openssl req -new -batch \
+    ${CA_ENABLE_ENGINE:+$openssl_engine_cmd} \
+    $( [ -z $CA_ENABLE_ENGINE ] && echo "-key ca/private/ca.key") \
+    -config ca/ca.conf \
+    -out ca/ca.csr \
+    -passin env:CA_PASS
+
+echo
 echo -e "$NOTE Creating the root CA certificate"
 
-openssl ca -selfsign -batch -notext \
-           -config ca/ca.conf \
-           -in ca/ca.csr \
-           -out ca/ca.crt \
-           -extensions root_ca_ext \
-           -passin env:CA_PASS
+openssl_engine_cmd="\
+    -engine pkcs11 \
+    -keyform engine \
+    -keyfile pkcs11:object=SIGN%20key"
+
+openssl ca \
+   ${CA_ENABLE_ENGINE:+$openssl_engine_cmd} \
+   -selfsign -batch -notext \
+   -config ca/ca.conf \
+   -in ca/ca.csr \
+   -out ca/ca.crt \
+   -extensions root_ca_ext \
+   -passin env:CA_PASS
 
 ln -s ca.crt ca/chain.pem
 ln -s ca.crt ca/root.crt
 
+echo
+if [[ -n "$CA_ENABLE_ENGINE" ]]; then
+    replace_crt 9c ca/ca.crt
+fi
+
+echo
 echo -e "$NOTE Creating the root CA CRL"
 
 openssl ca -gencrl -batch \
+           ${CA_ENABLE_ENGINE:+$openssl_engine_cmd} \
            -config ca/ca.conf \
            -out ca/ca.crl \
            -passin env:CA_PASS
 
+echo
 if [ $SYMLINK -eq 1 ]; then
     echo -e "$NOTE Symlinking toolchain (dev mode)"
     CP_CMD='ln -s'

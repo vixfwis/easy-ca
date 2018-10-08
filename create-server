@@ -74,14 +74,23 @@ fi
 
 
 echo
+if [ -n "$CA_ENABLE_ENGINE" ]; then
+    echo -e "$NOTE Your CA key is on PKCS11 device, enter PIN."
+fi
 echo -e -n "$INPUT Enter passphase for signing CA key: "
 read -r -s PASS
 echo
 export CA_PASS="${PASS}"
-openssl rsa -check \
-            -in ca/private/ca.key \
-            -passin env:CA_PASS \
-            -noout
+
+openssl_engine_cmd='
+    -engine pkcs11 
+    -inform engine
+    -in pkcs11:object=SIGN%20key'
+openssl rsa \
+            ${CA_ENABLE_ENGINE:+$openssl_engine_cmd} \
+            $( [ -z $CA_ENABLE_ENGINE ] && echo "-check -in ca/private/ca.key") \
+            -noout \
+            -passin env:CA_PASS
 
 trap 'rm -Rf "certs/server/$SAFE_NAME"' 0
 mkdir "certs/server/$SAFE_NAME"
@@ -92,28 +101,74 @@ export SAN="${ALT_NAME}"
 ask_server_cert_questions
 template "${BIN_DIR}/templates/server.tpl" "certs/server/$SAFE_NAME/$SAFE_NAME.conf"
 
+echo -e "$NOTE Usually a server key will not be on a pkcs11 device." 
+echo -e -n "$INPUT Create csr on pkcs11 device? (key must be in \"PIV AUTH key\" or 9a): [yN]"
+read -r SURE
+if [ "${SURE}" != "y" ] && [ "${SURE}" != "Y" ]; then
+    ENABLE_ENGINE=
+else
+    ENABLE_ENGINE=1
+    init_slot 9a
+fi
+
 echo -e "$NOTE Creating the server key and csr"
 
-openssl req -new -nodes \
-            -batch \
+# Create the sever key and csr
+openssl_engine_cmd='
+    -engine pkcs11 
+    -keyform engine
+    -key pkcs11:object=PIV%20AUTH%20key'
+openssl req -new -batch \
+            ${ENABLE_ENGINE:+$openssl_engine_cmd} \
             -config "certs/server/$SAFE_NAME/$SAFE_NAME.conf" \
-            -keyout "certs/server/$SAFE_NAME/$SAFE_NAME.key" \
-            -out "certs/server/$SAFE_NAME/$SAFE_NAME.csr"
-openssl rsa -noout -check -in "certs/server/$SAFE_NAME/$SAFE_NAME.key"
-chmod 0400 "certs/server/$SAFE_NAME/$SAFE_NAME.key"
+            -out "certs/server/$SAFE_NAME/$SAFE_NAME.csr" \
+            $( [ -z $ENABLE_ENGINE ] && echo "
+            -nodes
+            -keyout certs/server/$SAFE_NAME/$SAFE_NAME.key")
+
+openssl_engine_cmd='
+    -engine pkcs11 
+    -inform engine
+    -in pkcs11:object=PIV%20AUTH%20key'
+openssl rsa \
+            ${ENABLE_ENGINE:+$openssl_engine_cmd} \
+            $( [ -z $ENABLE_ENGINE ] && echo "-check -in certs/server/$SAFE_NAME/$SAFE_NAME.key") \
+            -noout
+
+if [ -z "$ENABLE_ENGINE" ]; then
+    chmod 0400 "certs/server/$SAFE_NAME/$SAFE_NAME.key"
+fi
 
 echo -e "$NOTE Creating the server certificate"
 
+# Create the server certificate
+openssl_engine_cmd="\
+    -engine pkcs11 \
+    -keyform engine \
+    -keyfile pkcs11:object=SIGN%20key"
 openssl ca -batch -notext \
+           ${CA_ENABLE_ENGINE:+$openssl_engine_cmd} \
            -config ca/ca.conf \
            -in "certs/server/$SAFE_NAME/$SAFE_NAME.csr" \
            -out "certs/server/$SAFE_NAME/$SAFE_NAME.crt" \
-           -extensions server_ext \
+           -extensions client_ext \
            -passin env:CA_PASS
+
+if [[ -n "$ENABLE_ENGINE" ]]; then
+    replace_crt 9a certs/server/"$SAFE_NAME"/"$SAFE_NAME".crt
+fi
 
 echo -e "$NOTE Verifying certificate/key pair"
 
-key_mod=$(openssl rsa -noout -modulus -in "certs/server/$SAFE_NAME/$SAFE_NAME.key")
+openssl_engine_cmd="\
+    -engine pkcs11 \
+    -inform engine \
+    -in pkcs11:object=PIV%20AUTH%20key"
+key_mod=$(openssl rsa \
+    ${ENABLE_ENGINE:+$openssl_engine_cmd} -noout -modulus \
+    $( [ -z $ENABLE_ENGINE ] && echo "-in certs/server/$SAFE_NAME/$SAFE_NAME.key")
+)
+
 cert_mod=$(openssl x509 -noout -modulus -in "certs/server/$SAFE_NAME/$SAFE_NAME.crt")
 
 if [ ! "$key_mod" = "$cert_mod" ];then

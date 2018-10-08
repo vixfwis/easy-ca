@@ -97,7 +97,7 @@ if [ ! -f ca/db/crt.srl ]; then
     exit 2
 fi
 
-if [ ! -f ca/private/ca.key ]; then
+if [ ! -f ca/private/ca.key ] && [ -z "${CA_ENABLE_ENGINE}" ]; then
     echo -e "$ERR No 'ca/private/ca.key' file!'";
     exit 2
 fi

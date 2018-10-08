@@ -124,6 +124,14 @@ init_ca_home() {
 generate_conf() {
     DEST="$1"
 
+    echo -e -n "$INPUT Enable PKCS11 Engine for this CA? [y/N]: "
+    read -r ENABLE_ENGINE
+    if [ "${ENABLE_ENGINE}" == "y" ] || [ "${ENABLE_ENGINE}" == "Y" ]; then
+        CA_ENABLE_ENGINE="${ENABLE_ENGINE}"
+    else
+        CA_ENABLE_ENGINE=
+    fi
+
     echo -e -n "$INPUT Short label for new CA [${CA_NAME}]: "
     read -r NAME
     if [ -n "${NAME}" ]; then
@@ -184,6 +192,7 @@ CA_CERT_ST="${CA_CERT_ST}"
 CA_CERT_L="${CA_CERT_L}"
 CA_CERT_O="${CA_CERT_O}"
 CA_CERT_OU="${CA_CERT_OU}"
+CA_ENABLE_ENGINE="${CA_ENABLE_ENGINE}"
 
 CA_KEY_ALG="${CA_KEY_ALG}"
 CA_KEY_LENGTH_ROOTCA="${CA_KEY_LENGTH_ROOTCA}"
@@ -276,3 +285,41 @@ ask_client_cert_questions() {
         exit 1
     fi
 }
+
+##
+## PKCS11 support functions, currently hard coded to support yubikeys using ykman
+##
+function init_slot(){
+    local SLOT=$1
+    echo -e -n "$INPUT Do you wish to create a new key in slot $SLOT? [y/N]: "
+    read -r SURE
+    if [ "${SURE}" == "y" ] || [ "${SURE}" == "Y" ]; then
+        ykman piv generate-key "$SLOT" yubi.pub
+        # This cert is to make PKCS11 happy.
+        # Should replace this with the proper cert later in the process.
+        ykman piv generate-certificate "$SLOT" yubi.pub -s 'bootstrap'
+        rm yubi.pub
+    fi
+}
+function replace_crt(){
+    local SLOT=$1
+    local CERT=$2
+    echo -e -n "$INPUT Do you wish to upload this cert to $SLOT? [y/N]: "
+    read -r SURE
+    if [ "${SURE}" == "y" ] || [ "${SURE}" == "Y" ]; then
+        ykman piv import-certificate "$SLOT" "$2"
+    fi
+}
+function init_engine(){
+    local SLOT=$1
+    echo -e "$NOTE THIS WILL RESET YOUR YUBIKEY USING YKMAN"
+    echo -e -n "$INPUT Do you wish to reset your device? [y/N]: "
+    read -r SURE
+    if [ "${SURE}" == "y" ] || [ "${SURE}" == "Y" ]; then
+        ykman piv reset
+    fi
+    init_slot "$SLOT"
+}
+#function openssl_engine() {
+    #[ -z $ENABLE_ENGINE ] || echo "engine dynamic -pre \"SO_PATH:${cfg_file_engine_pkcs11}\" -pre ID:pkcs11 -pre LIST_ADD:1 -pre LOAD -pre \"MODULE_PATH:${cfg_file_opensc_pkcs11}\" ${ENGINE_VERBOSE:+"-pre VERBOSE"}"
+#}

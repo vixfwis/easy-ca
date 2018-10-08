@@ -112,7 +112,12 @@ export SAN=""
 
 echo -e "$NOTE Revoke the certificate"
 
+openssl_engine_cmd="\
+    -engine pkcs11 \
+    -keyform engine \
+    -keyfile pkcs11:object=SIGN%20key"
 openssl ca \
+           ${CA_ENABLE_ENGINE:+$openssl_engine_cmd} \
            -config ca/ca.conf \
            -revoke "${CERT_PATH}" \
            -crl_reason "${REASON}" \
@@ -120,7 +125,12 @@ openssl ca \
 
 echo -e "$NOTE Regenerate the CRL"
 
+openssl_engine_cmd="\
+    -engine pkcs11 \
+    -keyform engine \
+    -keyfile pkcs11:object=SIGN%20key"
 openssl ca -gencrl \
+           ${CA_ENABLE_ENGINE:+$openssl_engine_cmd} \
            -config ca/ca.conf \
            -out ca/ca.crl \
            -passin env:CA_PASS
