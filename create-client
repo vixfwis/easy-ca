@@ -86,7 +86,7 @@ export CA_USERNAME="${CLIENT_NAME}"
 export CA_CERT_MAIL=""
 ask_client_cert_questions
 export SAN="email:$CA_CERT_MAIL"
-template "${BIN_DIR}/templates/client.tpl" "certs/clients/$SAFE_NAME/$SAFE_NAME.conf"
+template "${BIN_DIR}/templates/clients.tpl" "certs/clients/$SAFE_NAME/$SAFE_NAME.conf"
 
 echo -e -n "$INPUT Create csr on pkcs11 device? (key must be in \"PIV AUTH key\" or 9a): [yN]"
 read -r SURE
@@ -94,7 +94,7 @@ if [ "${SURE}" != "y" ] && [ "${SURE}" != "Y" ]; then
     ENABLE_ENGINE=
 else
     ENABLE_ENGINE=1
-    init_slot 9a
+    init_slot 9a "certs/clients/$SAFE_NAME/$SAFE_NAME.pub"
 fi
 
 echo -e "$NOTE Creating the client key and csr"
@@ -123,7 +123,11 @@ openssl rsa \
 
 if [ -z "$ENABLE_ENGINE" ]; then
     chmod 0400 "certs/clients/$SAFE_NAME/$SAFE_NAME.key"
+    openssl rsa -in "certs/clients/$SAFE_NAME/$SAFE_NAME.key" \ 
+        -pubout -out "certs/clients/$SAFE_NAME/$SAFE_NAME.pub"
 fi
+ssk-keygen -f "certs/clients/$SAFE_NAME/$SAFE_NAME.pub" -i -mPKCS8 \
+        | awk "{printf \$0;print \" ${SAFE_NAME}\"}" > "certs/clients/$SAFE_NAME/$SAFE_NAME.ssh.pub"
 
 echo -e "$NOTE Creating the client certificate"
 

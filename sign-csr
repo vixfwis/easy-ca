@@ -113,7 +113,7 @@ export CA_USERNAME="$CSR_CERT_CN"
 export CA_CERT_MAIL="$CSR_CERT_MAIL"
 
 cp --suffix ".old" -b -f -u "$CSR_PATH" "certs/clients/$SAFE_NAME/$SAFE_NAME.csr"
-template "$BIN_DIR/templates/client.tpl" "certs/clients/$SAFE_NAME/$SAFE_NAME.conf"
+template "$BIN_DIR/templates/clients.tpl" "certs/clients/$SAFE_NAME/$SAFE_NAME.conf"
 
 echo -e "$NOTE Creating the client certificate (overwriting C,ST,L,O,OU DN fields)."
 

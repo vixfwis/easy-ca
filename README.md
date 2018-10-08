@@ -10,6 +10,8 @@ A suite of bash scripts for automating very basic OpenSSL Certificate Authority 
 * Creating Server certificates
 * Creating Client certificates
 * Revoking certificates and maintaining CRLs
+* Creating CSRs
+* Managing SSH keys
 
 ## Usage
 
@@ -27,6 +29,7 @@ A suite of bash scripts for automating very basic OpenSSL Certificate Authority 
 | revoke-cert       | Revoke a (client\|server) certificate                             |
 | show-status       | Show the infos about the current CA (signed certificates...)      |
 | sign-csr          | Sign an imported client certificate                               |
+| create-csr        | Create a client certificate                                       |
 
 #### Important files:
 
@@ -49,6 +52,8 @@ create-root-ca -d $ROOT_CA_DIR
 
 ```
 $ROOT_CA_DIR/ca/ca.crt
+$ROOT_CA_DIR/ca/ca.pub
+$ROOT_CA_DIR/ca/ca.ssh.pub
 $ROOT_CA_DIR/ca/private/ca.key
 $ROOT_CA_DIR/ca/ca.crl
 ```
@@ -65,6 +70,8 @@ $ROOT_CA_DIR/bin/create-signing-ca -d $SIGNING_CA_DIR
 
 ```
 $SIGNING_CA_DIR/ca/ca.crt
+$SIGNING_CA_DIR/ca/ca.pub
+$SIGNING_CA_DIR/ca/ca.ssh.pub
 $SIGNING_CA_DIR/ca/private/ca.key
 $SIGNING_CA_DIR/ca/ca.crl
 $SIGNING_CA_DIR/ca/root.crt
@@ -86,6 +93,8 @@ All addresses **must** be supplied via the *-a* flag.
 ```
 $CA_DIR/certs/server/FQDN-Description/FQDN-Description.crt
 $CA_DIR/certs/server/FQDN-Description/FQDN-Description.key
+$CA_DIR/certs/server/FQDN-Description/FQDN-Description.pub
+$CA_DIR/certs/server/FQDN-Description/FQDN-Description.ssh.pub
 $CA_DIR/certs/server/FQDN-Description/FQDN-Description.csr
 ```
 
@@ -102,6 +111,8 @@ $CA_DIR/bin/create-client -c user@domain.com
 ```
 $CA_DIR/certs/clients/user-domain-com/user-domain-com.crt
 $CA_DIR/certs/clients/user-domain-com/user-domain-com.key
+$CA_DIR/certs/clients/user-domain-com/user-domain-com.pub
+$CA_DIR/certs/clients/user-domain-com/user-domain-com.ssh.pub
 $CA_DIR/certs/clients/user-domain-com/user-domain-com.csr
 ```
 
@@ -130,6 +141,7 @@ These scripts are very simple, and make some hard-coded assumptions about behavi
 * Client and Server certificates have 3072-bit RSA keys (configurable in *defaults.conf*)
 * Client and Server keys are not encrypted
 * There is no wrapper *yet* for renewing certificates
+* PKCS11 support is in beta
 
 ## License
 

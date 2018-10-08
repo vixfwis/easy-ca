@@ -1,0 +1,159 @@
+#!/bin/bash
+
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+# Derek Moore <derek.moore@gmail.com>
+# Christian Göttsche <cgzones@googlemail.com>
+# Tom Bereknyei <tomberek@gmail.com>
+
+set -eu
+set -o pipefail
+
+umask 0077
+
+BIN_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+source "${BIN_DIR}/functions"
+source "${BIN_DIR}/defaults.conf"
+
+usage() {
+    echo "Usage: $0 -c CSR_PATH [-F NAME] [-s] [-m CSR_CERT_MAIL]"
+    echo "Create a client certificate request located at CSR_PATH"
+    echo
+    echo "Options:"
+    echo "    -c CSR_NAME        Name of certificate request"
+    echo
+    echo "    -s                 Request is a server [default is client]"
+    echo
+    echo "    -k KEY_PATH        Path to key to use [default is to create one]"
+    echo
+    echo "    -m CSR_CERT_MAIL   Email address to use in client certificate request"
+    echo "                       Useful when using ykman which doesn't use email"
+    echo
+    echo "    -F NAME            Force to use custom SAFE_NAME"
+    echo "                       Useful for name clahses, use with caution"
+    echo
+}
+
+if [ ! -f ca/ca.crt ]; then
+    echo -e "$ERR Must be run inside a CA directory!"
+    exit 2
+fi
+
+CSR_PATH=
+CSR_NAME=
+CSR_TYPE="clients"
+CSR_KEY=
+CSR_CERT_MAIL=
+
+while getopts c:sk:F:m:h FLAG; do
+    case $FLAG in
+        c) CSR_PATH=${OPTARG} ;;
+        F) CSR_NAME=${OPTARG} ;;
+        m) CSR_CERT_MAIL=${OPTARG} ;;
+        s) CSR_TYPE="server" ;;
+        k) CSR_KEY=${OPTARG} ;;
+        h) echo -e -n "$SUCC " && usage && exit 0 ;;
+        *) echo -e -n "$ERR " && usage && exit 2 ;;
+    esac
+done
+
+if [ $OPTIND -le $# ]; then
+    echo -e -n "$ERR " && usage && exit 2
+elif [ "$CSR_PATH" = "" ]; then
+    echo -e -n "$ERR " && usage && exit 1
+fi
+
+if [ -n "$CSR_NAME" ]; then
+    SAFE_NAME=$(echo "$CSR_NAME" | sed 's/\*/star/g' | sed 's/[^A-Za-z0-9-]/-/g')
+else
+    SAFE_NAME=$(echo "$CSR_PATH" | sed 's/\*/star/g' | sed 's/[^A-Za-z0-9-]/-/g')
+fi
+
+echo -e "$NOTE Creating new "$CSR_TYPE" certificate request for '$SAFE_NAME'"
+
+if [ -f "certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.crt" ]; then
+    echo -e "$ERR Certificate already exist for ($SCR_TYPE/$SAFE_NAME), exiting."
+    exit 1
+fi
+
+pushd "${BIN_DIR}/.." > /dev/null
+
+mkdir -p "certs/$CSR_TYPE/$SAFE_NAME"
+
+# Generate the client cert openssl config
+export CA_USERNAME="${SAFE_NAME}"
+export CA_CERT_MAIL="${CSR_CERT_MAIL}"
+if [[ "$CSR_TYPE" = "server" ]]; then
+    ask_server_cert_questions
+else
+    ask_client_cert_questions
+fi
+export SAN="email:$CA_CERT_MAIL"
+template "${BIN_DIR}/templates/$CSR_TYPE.tpl" "certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.conf"
+
+echo -e "$NOTE Key is ${CSR_KEY:-" being created"}"
+
+ENABLE_ENGINE=
+if [[ -z "$CSR_KEY" ]]; then
+    echo -e -n "$INPUT Use PKCS11 Engine for this csr (key must be in \"PIV AUTH key\" or 9a)? [y/N]: "
+    read -r ENABLE_ENGINE
+    if [ "${ENABLE_ENGINE}" == "y" ] || [ "${ENABLE_ENGINE}" == "Y" ]; then
+        ENABLE_ENGINE=1
+        init_slot 9a "certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.pub"
+    else
+        ENABLE_ENGINE=
+    fi
+else
+    cp "$CSR_KEY" "certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.key"
+    chmod 0400 "certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.key"
+    openssl rsa -in "certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.key" \ 
+                -pubout -out "certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.pub"
+fi
+
+echo -e "$NOTE Creating csr"
+
+# Create the csr
+openssl_engine_cmd='
+    -engine pkcs11 
+    -keyform engine
+    -key pkcs11:object=PIV%20AUTH%20key'
+openssl req -new -batch \
+            ${ENABLE_ENGINE:+$openssl_engine_cmd} \
+            -config "certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.conf" \
+            -out "certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.csr" \
+            $( [ -z $ENABLE_ENGINE ] && echo "
+            -nodes
+            ${CSR_KEY:+"-key $CSR_KEY"}
+            $( [ -z $CSR_KEY ] && echo "-keyout certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.key")
+            ")
+
+openssl_engine_cmd='
+    -engine pkcs11 
+    -inform engine
+    -in pkcs11:object=PIV%20AUTH%20key'
+openssl rsa \
+            ${ENABLE_ENGINE:+$openssl_engine_cmd} \
+            $( [ -z $ENABLE_ENGINE ] && echo "-check -in certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.key") \
+            -noout
+
+echo values $ENABLE_ENGINE $CSR_KEY
+if [ -z "$ENABLE_ENGINE" ] && [ -z "$CSR_KEY" ]; then
+    echo entered
+    pwd
+    chmod 0400 "certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.key"
+    openssl rsa -in "certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.key" \
+        -pubout -out "certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.pub"
+fi
+
+ssh-keygen -f "certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.pub" -i -mPKCS8 \
+        | awk "{printf \$0;print \" ${SAFE_NAME}\"}" > "certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.ssh.pub"
+
+echo -e "$NOTE Verifying csr"
+
+openssl req -text -noout -verify -in "certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.csr"
+
+popd > /dev/null
+
+echo -e "$SUCC CSR for '$SAFE_NAME' created."

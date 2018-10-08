@@ -19,7 +19,7 @@ gen-html
 "
 
 export TEMPLATES_ROOT="
-client.tpl
+clients.tpl
 server.tpl
 signing.tpl
 root_index.tpl
@@ -37,7 +37,7 @@ gen-html
 "
 
 export TEMPLATES_SIGN="
-client.tpl
+clients.tpl
 server.tpl
 sign_index.tpl
 "
@@ -291,14 +291,14 @@ ask_client_cert_questions() {
 ##
 function init_slot(){
     local SLOT=$1
+    local PUB=$2
     echo -e -n "$INPUT Do you wish to create a new key in slot $SLOT? [y/N]: "
     read -r SURE
     if [ "${SURE}" == "y" ] || [ "${SURE}" == "Y" ]; then
-        ykman piv generate-key "$SLOT" yubi.pub
+        ykman piv generate-key "$SLOT" "$PUB"
         # This cert is to make PKCS11 happy.
         # Should replace this with the proper cert later in the process.
-        ykman piv generate-certificate "$SLOT" yubi.pub -s 'bootstrap'
-        rm yubi.pub
+        ykman piv generate-certificate "$SLOT" "$PUB" -s 'bootstrap'
     fi
 }
 function replace_crt(){
@@ -318,7 +318,6 @@ function init_engine(){
     if [ "${SURE}" == "y" ] || [ "${SURE}" == "Y" ]; then
         ykman piv reset
     fi
-    init_slot "$SLOT"
 }
 #function openssl_engine() {
     #[ -z $ENABLE_ENGINE ] || echo "engine dynamic -pre \"SO_PATH:${cfg_file_engine_pkcs11}\" -pre ID:pkcs11 -pre LIST_ADD:1 -pre LOAD -pre \"MODULE_PATH:${cfg_file_opensc_pkcs11}\" ${ENGINE_VERBOSE:+"-pre VERBOSE"}"
