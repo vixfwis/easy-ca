@@ -74,7 +74,7 @@ fi
 echo -e "$NOTE Creating new "$CSR_TYPE" certificate request for '$SAFE_NAME'"
 
 if [ -f "certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.crt" ]; then
-    echo -e "$ERR Certificate already exist for ($SCR_TYPE/$SAFE_NAME), exiting."
+    echo -e "$ERR Certificate already exist for ($CSR_TYPE/$SAFE_NAME), exiting."
     exit 1
 fi
 

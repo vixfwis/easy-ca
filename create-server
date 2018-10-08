@@ -157,7 +157,7 @@ openssl ca -batch -notext \
            -config ca/ca.conf \
            -in "certs/server/$SAFE_NAME/$SAFE_NAME.csr" \
            -out "certs/server/$SAFE_NAME/$SAFE_NAME.crt" \
-           -extensions client_ext \
+           -extensions server_ext \
            -passin env:CA_PASS
 
 if [[ -n "$ENABLE_ENGINE" ]]; then
