@@ -80,7 +80,7 @@ fi
 
 pushd "${BIN_DIR}/.." > /dev/null
 
-mkdir -p "certs/$CSR_TYPE/$SAFE_NAME"
+mkdir -p "certs/$CSR_TYPE/$SAFE_NAME/ssh"
 
 # Generate the client cert openssl config
 export CA_USERNAME="${SAFE_NAME}"
@@ -108,6 +108,7 @@ if [[ -z "$CSR_KEY" ]]; then
 else
     cp "$CSR_KEY" "certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.key"
     chmod 0400 "certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.key"
+    ln -s ../"$SAFE_NAME".key "certs/$CSR_TYPE/$SAFE_NAME/ssh/$SAFE_NAME.ssh"
     openssl rsa -in "certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.key" \ 
                 -pubout -out "certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.pub"
 fi
@@ -138,17 +139,15 @@ openssl rsa \
             $( [ -z $ENABLE_ENGINE ] && echo "-check -in certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.key") \
             -noout
 
-echo values $ENABLE_ENGINE $CSR_KEY
 if [ -z "$ENABLE_ENGINE" ] && [ -z "$CSR_KEY" ]; then
-    echo entered
-    pwd
     chmod 0400 "certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.key"
+    ln -s "$SAFE_NAME".key "certs/$CSR_TYPE/$SAFE_NAME/ssh/$SAFE_NAME.ssh"
     openssl rsa -in "certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.key" \
         -pubout -out "certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.pub"
 fi
 
 ssh-keygen -f "certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.pub" -i -mPKCS8 \
-        | awk "{printf \$0;print \" ${SAFE_NAME}\"}" > "certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.ssh.pub"
+        | awk "{printf \$0;print \" ${SAFE_NAME}\"}" > "certs/$CSR_TYPE/$SAFE_NAME/ssh/$SAFE_NAME.ssh.pub"
 
 echo -e "$NOTE Verifying csr"
 

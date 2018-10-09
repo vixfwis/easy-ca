@@ -79,7 +79,7 @@ openssl rsa \
             -passin env:CA_PASS
 
 trap 'rm -Rf "certs/clients/$SAFE_NAME"' 0
-mkdir "certs/clients/$SAFE_NAME"
+mkdir -p "certs/clients/$SAFE_NAME/ssh"
 
 # Generate the client cert openssl config
 export CA_USERNAME="${CLIENT_NAME}"
@@ -123,11 +123,20 @@ openssl rsa \
 
 if [ -z "$ENABLE_ENGINE" ]; then
     chmod 0400 "certs/clients/$SAFE_NAME/$SAFE_NAME.key"
+    ln -s ../"$SAFE_NAME".key "certs/clients/$SAFE_NAME/ssh/$SAFE_NAME.ssh"
     openssl rsa -in "certs/clients/$SAFE_NAME/$SAFE_NAME.key" \
         -pubout -out "certs/clients/$SAFE_NAME/$SAFE_NAME.pub"
 fi
+
+echo -e "$NOTE Creating client SSH ($SAFE_NAME.ssh.pub)"
+echo -e "$NOTE Example sshd_config: TrustedUserCAKeys ca.ssh.pub"
+echo -e "$NOTE Example sshd_config: AuthorizedPrincipalsFile /etc/ssh/auth_principals/%u"
+echo -e "$NOTE Example known_hosts: @cert-authority *.example.com <ca.ssh.pub>"
+
 ssh-keygen -f "certs/clients/$SAFE_NAME/$SAFE_NAME.pub" -i -mPKCS8 \
-        | awk "{printf \$0;print \" ${SAFE_NAME}\"}" > "certs/clients/$SAFE_NAME/$SAFE_NAME.ssh.pub"
+        | awk "{printf \$0;print \" ${SAFE_NAME}\"}" > "certs/clients/$SAFE_NAME/ssh/$SAFE_NAME.ssh.pub"
+ssh-keygen -lvf "certs/clients/$SAFE_NAME/ssh/$SAFE_NAME.ssh.pub"
+
 
 echo -e "$NOTE Creating the client certificate"
 

@@ -126,6 +126,8 @@ pushd "${CA_DIR}" > /dev/null
 
 # Generate the signing CA openssl config
 template "${BIN_DIR}/templates/signing.tpl" "ca/ca.conf"
+mkdir -p ca/ssh
+echo $( od -vAn -N2 -tu2 < /dev/urandom )00 > ca/ssh/serial
 
 echo -e "$NOTE Creating the signing sub-CA key"
 
@@ -135,12 +137,13 @@ if [[ -z $CA_ENABLE_ENGINE ]]; then
 
     openssl genrsa -out ca/private/ca.key -"${CA_KEY_ALG}" -passout env:CA_PASS "${CA_KEY_LENGTH_ROOTCA}"
     chmod 0400 ca/private/ca.key
+    ln -s ../private/ca.key "ca/ssh/ca.ssh"
     openssl rsa -in ca/private/ca.key -pubout -out ca/ca.pub -passin env:CA_PASS
 else
     echo -e "$NOTE Signing sub-CA key should already exist via pkcs11 engine."
 fi
 ssh-keygen -f ca/ca.pub -i -mPKCS8 \
-        | awk "{printf \$0;print \" ${CA_DIR}\"}" > ca/ca.ssh.pub
+        | awk "{printf \$0;print \" ${CA_DIR}\"}" > ca/ssh/ca.ssh.pub
 
 echo -e "$NOTE Creating the signing sub-CA csr"
 

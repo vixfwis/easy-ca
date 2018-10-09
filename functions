@@ -6,12 +6,14 @@
 # Derek Moore <derek@ripple.com>
 # Christian Göttsche <cgzones@googlemail.com>
 
+export TZ=
 # Binaries copied during install
 export BINARIES_ROOT="
 create-signing-ca
 create-server
 create-client
 sign-csr
+sign-ssh
 revoke-cert
 functions
 show-status
@@ -30,6 +32,7 @@ export BINARIES_SIGN="
 create-server
 create-client
 sign-csr
+sign-ssh
 revoke-cert
 functions
 show-status
@@ -192,12 +195,13 @@ CA_CERT_ST="${CA_CERT_ST}"
 CA_CERT_L="${CA_CERT_L}"
 CA_CERT_O="${CA_CERT_O}"
 CA_CERT_OU="${CA_CERT_OU}"
-CA_ENABLE_ENGINE="${CA_ENABLE_ENGINE}"
 
 CA_KEY_ALG="${CA_KEY_ALG}"
 CA_KEY_LENGTH_ROOTCA="${CA_KEY_LENGTH_ROOTCA}"
 CA_KEY_LENGTH_SIGNCA="${CA_KEY_LENGTH_SIGNCA}"
 CA_KEY_LENGTH_ENDCRT="${CA_KEY_LENGTH_ENDCRT}"
+
+CA_ENABLE_ENGINE="${CA_ENABLE_ENGINE}"
 EOF
 }
 
