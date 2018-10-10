@@ -124,7 +124,7 @@ echo
 if [ -n "$CA_ENABLE_ENGINE" ]; then
     echo -e "$NOTE Your CA key is on PKCS11 device"
     ssh_engine_cmd="-D opensc-pkcs11.so"
-    ca_path="ca/ca.ssh.pub"
+    ca_path="ca/ssh/ca.ssh.pub"
 else
     ssh_engine_cmd=
     ca_path="ca/private/ca.key"

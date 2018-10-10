@@ -113,6 +113,11 @@ if [[ -z $CA_ENABLE_ENGINE ]]; then
     ln -s ../private/ca.key ca/ssh/ca.ssh
     openssl rsa -in ca/private/ca.key -pubout -out ca/ca.pub -passin env:CA_PASS
 else
+    openssl_engine_cmd="\
+        -engine pkcs11 \
+        -inform engine \
+        -in pkcs11:object=SIGN%20key"
+    openssl rsa $openssl_engine_cmd -pubout -out ca/ca.pub -passin env:CA_PASS
     echo -e "$NOTE Root CA key should already exist via pkcs11 engine."
 fi
 
