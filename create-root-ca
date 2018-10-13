@@ -101,32 +101,19 @@ pushd "${CA_DIR}" > /dev/null
 
 # Generate the root CA openssl config
 template "${BIN_DIR}/templates/root.tpl" "ca/ca.conf"
+# Generate the root CA openssh config
 mkdir -p ca/ssh
 echo $( od -vAn -N2 -tu2 < /dev/urandom )00 > ca/ssh/serial
 
 # Create the signing CA key
 if [[ -z $CA_ENABLE_ENGINE ]]; then
-    echo -e "$NOTE Creating the root CA key (${CA_KEY_ALG} with ${CA_KEY_LENGTH_ROOTCA} bits)"
-
-    openssl genrsa -out ca/private/ca.key -"${CA_KEY_ALG}" -passout env:CA_PASS "${CA_KEY_LENGTH_ROOTCA}"
-    chmod 0400 ca/private/ca.key
+    generate_key ca/private/ca.key
     ln -s ../private/ca.key ca/ssh/ca.ssh
-    openssl rsa -in ca/private/ca.key -pubout -out ca/ca.pub -passin env:CA_PASS
+    generate_pubkey ca/private/ca.key ca/ca.pub
 else
-    openssl_engine_cmd="\
-        -engine pkcs11 \
-        -inform engine \
-        -in pkcs11:object=SIGN%20key"
-    openssl rsa $openssl_engine_cmd -pubout -out ca/ca.pub -passin env:CA_PASS
-    echo -e "$NOTE Root CA key should already exist via pkcs11 engine."
+    generate_pubkey_pkcs11 pkcs11:object=SIGN%20key ca/ca.pub
 fi
-
-echo -e "$NOTE Creating root SSH (ca.ssh.pub)"
-echo -e "$NOTE Example in sshd_config: TrustedUserCAKeys ca.ssh.pub"
-
-ssh-keygen -f ca/ca.pub -i -mPKCS8 \
-        | awk "{printf \$0;print \" ${CA_DIR}\"}" > ca/ssh/ca.ssh.pub
-ssh-keygen -lvf ca/ssh/ca.ssh.pub
+generate_pubkey_ssh ca/ca.pub ca/ssh/ca.ssh.pub ${CA_DIR}
 
 echo -e "$NOTE Creating the root CA csr"
 

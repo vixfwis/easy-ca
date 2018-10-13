@@ -143,7 +143,10 @@ export SAN=""
 pushd "${CA_DIR}" > /dev/null
 
 # Generate the signing CA openssl config
+echo enter template
 template "${BIN_DIR}/templates/signing.tpl" "ca/ca.conf"
+echo exit template
+# Generate the signing CA openssh config
 mkdir -p ca/ssh
 echo $( od -vAn -N2 -tu2 < /dev/urandom )00 > ca/ssh/serial
 
@@ -151,22 +154,13 @@ echo -e "$NOTE Creating the signing sub-CA key"
 
 # Create the signing CA key
 if [[ -z $CA_ENABLE_ENGINE ]]; then
-    echo -e "$NOTE Creating the signing sub-CA key (${CA_KEY_ALG} with ${CA_KEY_LENGTH_ROOTCA} bits)"
-
-    openssl genrsa -out ca/private/ca.key -"${CA_KEY_ALG}" -passout env:CA_PASS "${CA_KEY_LENGTH_ROOTCA}"
-    chmod 0400 ca/private/ca.key
-    ln -s ../private/ca.key "ca/ssh/ca.ssh"
-    openssl rsa -in ca/private/ca.key -pubout -out ca/ca.pub -passin env:CA_PASS
+    generate_key ca/private/ca.key
+    ln -s ../private/ca.key ca/ssh/ca.ssh
+    generate_pubkey ca/private/ca.key ca/ca.pub
 else
-    openssl_engine_cmd="\
-        -engine pkcs11 \
-        -inform engine \
-        -in pkcs11:object=SIGN%20key"
-    openssl rsa $openssl_engine_cmd -pubout -out ca/ca.pub -passin env:CA_PASS
-    echo -e "$NOTE Signing sub-CA key should already exist via pkcs11 engine."
+    generate_pubkey_pkcs11 pkcs11:object=SIGN%20key ca/ca.pub
 fi
-ssh-keygen -f ca/ca.pub -i -mPKCS8 \
-        | awk "{printf \$0;print \" ${CA_DIR}\"}" > ca/ssh/ca.ssh.pub
+generate_pubkey_ssh ca/ca.pub ca/ssh/ca.ssh.pub ${CA_DIR}
 
 echo -e "$NOTE Creating the signing sub-CA csr"
 
@@ -184,7 +178,8 @@ openssl req -new -batch \
 echo -e "$NOTE Creating the signing sub-CA certificate"
 
 pushd "${PARENT}" > /dev/null
-if [[ -n $CA_PARENT_ENABLE_ENGINE ]]; then
+
+if [[ -n $CA_PARENT_ENABLE_ENGINE ]] && [[ -n $CA_ENABLE_ENGINE ]] ; then
     echo -e "$ERR WARNING: please make sure you have the proper pkcs11 device inserted. You are signing the sub-CA with the root CA device. Do not have your sub-CA device inserted."
     echo -e -n "$INPUT Are you SURE you wish to continue? [y/N]: "
     read -r SURE

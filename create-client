@@ -93,8 +93,12 @@ read -r SURE
 if [ "${SURE}" != "y" ] && [ "${SURE}" != "Y" ]; then
     ENABLE_ENGINE=
 else
+    echo -e -n "$INPUT Enter PIN for PIV key: "
+    read -r -s PASS
+    echo
+    export PIV_PASS="${PASS}"
     ENABLE_ENGINE=1
-    init_slot 9a "certs/clients/$SAFE_NAME/$SAFE_NAME.pub"
+    CA_PASS=$PIV_PASS init_slot 9a "certs/clients/$SAFE_NAME/$SAFE_NAME.pub" "pkcs11:object=PIV%20AUTH%20key"
 fi
 
 echo -e "$NOTE Creating the client key and csr"
@@ -103,7 +107,8 @@ echo -e "$NOTE Creating the client key and csr"
 openssl_engine_cmd='
     -engine pkcs11 
     -keyform engine
-    -key pkcs11:object=PIV%20AUTH%20key'
+    -key pkcs11:object=PIV%20AUTH%20key
+    -passin env:PIV_PASS'
 openssl req -new -batch \
             ${ENABLE_ENGINE:+$openssl_engine_cmd} \
             -config "certs/clients/$SAFE_NAME/$SAFE_NAME.conf" \
@@ -115,7 +120,8 @@ openssl req -new -batch \
 openssl_engine_cmd='
     -engine pkcs11 
     -inform engine
-    -in pkcs11:object=PIV%20AUTH%20key'
+    -in pkcs11:object=PIV%20AUTH%20key
+    -passin env:PIV_PASS'
 openssl rsa \
             ${ENABLE_ENGINE:+$openssl_engine_cmd} \
             $( [ -z $ENABLE_ENGINE ] && echo "-check -in certs/clients/$SAFE_NAME/$SAFE_NAME.key") \
@@ -162,7 +168,8 @@ echo -e "$NOTE Verifying certificate/key pair"
 openssl_engine_cmd="\
     -engine pkcs11 \
     -inform engine \
-    -in pkcs11:object=PIV%20AUTH%20key"
+    -in pkcs11:object=PIV%20AUTH%20key \
+    -passin env:PIV_PASS"
 key_mod=$(openssl rsa \
     ${ENABLE_ENGINE:+$openssl_engine_cmd} -noout -modulus \
     $( [ -z $ENABLE_ENGINE ] && echo "-in certs/clients/$SAFE_NAME/$SAFE_NAME.key")
