@@ -55,23 +55,31 @@ if [ ! -f "${CERT_PATH}" ]; then
     exit 1
 fi
 
-if ssh-keygen -lvf "$CERT_PATH" ; then
-    if ssh-keygen -Lf "$CERT_PATH" ; then
+if ssh-keygen -lvf "$CERT_PATH" 2>/dev/null; then
+    if ssh-keygen -Lf "$CERT_PATH" 2>/dev/null; then
         echo -e "$NOTE Detected SSH certificate; revoke by serial."
         SSH_REVOKE="serial: $(ssh-keygen -Lf "$CERT_PATH" | grep Serial | awk '{print $2;}')"
+    elif ssh-keygen -y -f $CERT_PATH >/dev/null 2>/dev/null ; then
+        REPLY=$(ssh-keygen -y -f $CERT_PATH)
+        echo -e "$NOTE Detected SSH [private] key; revoke by sha1."
+        SSH_REVOKE="sha1: $REPLY"
     else
         echo -e "$NOTE Detected SSH [public] key; revoke by sha1."
         SSH_REVOKE="sha1: $(cat "$CERT_PATH")"
     fi
     pushd "${BIN_DIR}/.." > /dev/null
-    echo -e "$SUCC You are about to revoke this certificate."
+    echo -e "$SUCC You are about to revoke this."
     echo -e -n "$INPUT Are you SURE you wish to continue? [y/N]: "
     read -r SURE
     if [ "${SURE}" != "y" ] && [ "${SURE}" != "Y" ]; then
         echo -e "$ERR Exiting."
         exit 1
     fi
-    ssh-keygen -k $( [ -f ca/ssh/revoke ] && echo "-u" ) -s ca/ssh/ca.ssh.pub -f ca/ssh/revoke <(echo $SSH_REVOKE)
+    REVOKE_TMP=$(mktemp -u)
+    mkfifo -m 600 $REVOKE_TMP
+    echo $SSH_REVOKE > $REVOKE_TMP &
+    ssh-keygen -k $( [ -f ca/ssh/revoke ] && echo "-u" ) -s ca/ssh/ca.ssh.pub -f ca/ssh/revoke $REVOKE_TMP
+    rm $REVOKE_TMP
     ! ssh-keygen -Q -f ca/ssh/revoke "$CERT_PATH"
     popd > /dev/null
     echo -e "$NOTE Remember to update sshd_config with: RevokedKeys ca/ssh/revoke"

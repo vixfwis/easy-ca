@@ -77,7 +77,7 @@ CA_PARENT_MODULUS=$(openssl rsa \
             ${CA_ENABLE_ENGINE:+$openssl_engine_cmd} \
             $( [ -z $CA_ENABLE_ENGINE ] && echo "-check -in ca/private/ca.key") \
             -noout -modulus \
-            -passin env:CA_PARENT_PASS)
+            -passin env:CA_PARENT_PASS | head -n1)
 
 CA_PARENT_ENABLE_ENGINE=$CA_ENABLE_ENGINE
 

@@ -96,9 +96,11 @@ fi
 if [[ ( "$SSH_BASE1" == "ca" || "$SSH_BASE2" == "server" ) && "$SSH_TYPE" != "-h" ]]; then
     echo -e -n "$ERR SSH User Certificate being created for a host, please confim."
     read -r -s SURE
+    echo
 elif [[ "$SSH_BASE2" == "clients" && "$SSH_TYPE" == "-h" ]]; then
     echo -e -n "$ERR SSH Host Certificate being created for a client, please confim."
     read -r -s SURE
+    echo
 fi
 
 CRT_PATH="${SSH_DIR1}/${SAFE_NAME}.crt"

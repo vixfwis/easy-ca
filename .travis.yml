@@ -7,6 +7,7 @@ dist: trusty
 before_install:
   - bash --version
   - openssl version
+  - ssh -V
 
 script:
   - |
