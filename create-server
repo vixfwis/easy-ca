@@ -93,7 +93,7 @@ openssl rsa \
             -passin env:CA_PASS
 
 trap 'rm -Rf "certs/server/$SAFE_NAME"' 0
-mkdir "certs/server/$SAFE_NAME"
+mkdir -p "certs/server/$SAFE_NAME/ssh"
 
 # Generate the server openssl config
 export CA_HOSTNAME="${SERVER_NAME}"
@@ -135,15 +135,19 @@ openssl rsa \
             $( [ -z $ENABLE_ENGINE ] && echo "-check -in certs/server/$SAFE_NAME/$SAFE_NAME.key") \
             -noout
 
+echo -e "$NOTE Example known_hosts: @cert-authority *.example.com ca.ssh-cert.pub"
+echo -e "$NOTE Example sshd_config: HostCertificate $SAFE_NAME.ssh-cert.pub"
+echo -e "$NOTE Example sshd_config: TrustedUserCAKeys ca.ssh.pub"
+echo -e "$NOTE Example sshd_config: RevokedKeys revoked-keys"
+
 if [ -z "$ENABLE_ENGINE" ]; then
     chmod 0400 "certs/server/$SAFE_NAME/$SAFE_NAME.key"
-    openssl rsa -in "certs/server/$SAFE_NAME/$SAFE_NAME.key" \ 
+    ln -s ../"$SAFE_NAME".key "certs/server/$SAFE_NAME/ssh/$SAFE_NAME.ssh"
+    openssl rsa -in "certs/server/$SAFE_NAME/$SAFE_NAME.key" \
         -pubout -out "certs/server/$SAFE_NAME/$SAFE_NAME.pub"
 fi
-ssk-keygen -f "certs/server/$SAFE_NAME/$SAFE_NAME.pub" -i -mPKCS8 \
-        | awk "{printf \$0;print \" ${SAFE_NAME}\"}" > "certs/server/$SAFE_NAME/$SAFE_NAME.ssh.pub"
-    
-
+ssh-keygen -f "certs/server/$SAFE_NAME/$SAFE_NAME.pub" -i -mPKCS8 \
+        | awk "{printf \$0;print \" ${SAFE_NAME}\"}" > "certs/server/$SAFE_NAME/ssh/$SAFE_NAME.ssh.pub"
 
 echo -e "$NOTE Creating the server certificate"
 

@@ -1,0 +1,140 @@
+#!/bin/bash
+
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+# Derek Moore <derek.moore@gmail.com>
+# Christian Göttsche <cgzones@googlemail.com>
+# Tom Bereknyei <tomberek@gmail.com>
+
+set -eu
+set -o pipefail
+
+umask 0077
+
+BIN_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+source "${BIN_DIR}/functions"
+source "${BIN_DIR}/defaults.conf"
+
+usage() {
+    echo "Usage: $0 -f SSH_PATH [-h] [-n PRINCIPALS] [-I CERT_ID] [-z SERIAL] [-V VALIDITY]"
+    echo "    Signs a ssh certificate located at SSH_PATH"
+    echo "    Will use the crt info located at SSH_PATH as defaults"
+    echo
+    echo "Options:"
+    echo "    -f SSH_PATH     Path to ssh public key"
+    echo
+    echo "    -h              Sign a host key for a server"
+    echo
+    echo "    -n PRINCIPALS   SSH Principals - WARNING, default allows all logins"
+    echo
+    echo "    -I CERT_ID      Certificate ID"
+    echo
+    echo "    -z SERIAL       Serial Number"
+    echo
+    echo "    -V VALIDITY     Validity interval"
+    echo
+    echo "    -Z KEYGEN_OPTS  Other options to pass to ssh-keygen"
+    echo
+}
+
+if [ ! -f ca/ca.crt ]; then
+    echo -e "$ERR Must be run inside a CA directory!"
+    exit 2
+fi
+
+SSH_PATH=
+SSH_TYPE=
+SSH_ID=
+# ssh-keygen default is to allow no principals to login as any user
+# this script keeps this default
+SSH_PRINCIPALS=
+SSH_SERIAL=0
+SSH_VALIDITY=
+SSH_OPTIONS=
+
+while getopts f:hI:n:z:V:Z:v FLAG; do
+    case $FLAG in
+        f) SSH_PATH=${OPTARG} ;;
+        h) SSH_TYPE="-h" ;;
+        I) SSH_ID=${OPTARG} ;;
+        n) SSH_PRINCIPALS="-n ${OPTARG}" ;;
+        z) SSH_SERIAL="${OPTARG}" ;;
+        V) SSH_VALIDITY="-V ${OPTARG}" ;;
+        Z) SSH_OPTIONS="${OPTARG}" ;;
+        # h taken by ssh-keygen, attempting to keep same options
+        v) echo -e -n "$SUCC " && usage && exit 0 ;;
+        *) echo -e -n "$ERR " && usage && exit 2 ;;
+    esac
+done
+
+if [ $OPTIND -le $# ]; then
+    echo -e -n "$ERR " && usage && exit 2
+elif [ -z "$SSH_PATH" ]; then
+    echo -e "$ERR No path supplied, exiting."
+    usage && exit 1
+fi
+
+ssh-keygen -lvf "$SSH_PATH"
+
+SSH_PATH_SHORT=$(basename "$SSH_PATH" .pub)
+SSH_PATH_SHORTER=$(basename "$SSH_PATH_SHORT" .ssh)
+SAFE_NAME=$(echo "$SSH_PATH_SHORTER" | sed 's/\*/star/g' | sed 's/[^A-Za-z0-9-]/-/g')
+
+SSH_DIR="$(realpath `dirname $SSH_PATH`)"
+SSH_BASE="$(basename $SSH_DIR)"
+SSH_DIR1="$(dirname $SSH_DIR)"
+SSH_BASE1="$(basename $SSH_DIR1)"
+SSH_DIR2="$(dirname $SSH_DIR1)"
+SSH_BASE2="$(basename $SSH_DIR2)"
+
+if [ -f "$SSH_DIR/$SAFE_NAME-cert.pub" ]; then
+    echo -e "$ERR SSH Certificate already exist for $SAFE_NAME, exiting."
+    exit 1
+fi
+if [[ ( "$SSH_BASE1" == "ca" || "$SSH_BASE2" == "server" ) && "$SSH_TYPE" != "-h" ]]; then
+    echo -e -n "$ERR SSH User Certificate being created for a host, please confim."
+    read -r -s SURE
+elif [[ "$SSH_BASE2" == "clients" && "$SSH_TYPE" == "-h" ]]; then
+    echo -e -n "$ERR SSH Host Certificate being created for a client, please confim."
+    read -r -s SURE
+fi
+
+CRT_PATH="${SSH_DIR1}/${SAFE_NAME}.crt"
+if [ -f "$CRT_PATH" ]; then
+    CRT_SUBJ=$(openssl x509 -in "$CRT_PATH" -noout -subject -nameopt multiline)
+    SSH_ID=${SSH_ID:-$(echo "$CRT_SUBJ" | grep -P '^\s+commonName' | cut -d '=' -f 2- | sed -e 's/^[[:space:]]*//')}
+    SSH_VALID_START=$(openssl x509 -in "$CRT_PATH" -noout -startdate | cut -d'=' -f2 | date -u -f - +%Y%m%d%H%M%S )
+    SSH_VALID_END=$(openssl x509 -in "$CRT_PATH" -noout -enddate | cut -d'=' -f2 | date -u -f - +%Y%m%d%H%M%S )
+    SSH_VALIDITY=${SSH_VALIDITY:-"-V ${SSH_VALID_START}:${SSH_VALID_END}"}
+fi
+SSH_ID=${SSH_ID:-$SAFE_NAME}
+if [ -f ca/ssh/serial ]; then
+    SSH_SERIAL=$(cat ca/ssh/serial)
+    echo $((SSH_SERIAL+1)) > ca/ssh/serial
+fi
+SSH_SERIAL="-z $((SSH_SERIAL+1))"
+
+echo -e "$NOTE Signing SSH cert for $SAFE_NAME using ID: $SSH_ID"
+
+pushd "${BIN_DIR}/.." > /dev/null
+
+echo
+if [ -n "$CA_ENABLE_ENGINE" ]; then
+    echo -e "$NOTE Your CA key is on PKCS11 device"
+    ssh_engine_cmd="-D opensc-pkcs11.so"
+    ca_path="ca/ssh/ca.ssh.pub"
+else
+    ssh_engine_cmd=
+    ca_path="ca/private/ca.key"
+fi
+
+# Create the ssh certificate
+ssh-keygen $ssh_engine_cmd $SSH_TYPE -s $ca_path -I "$SSH_ID" $SSH_PRINCIPALS $SSH_SERIAL $SSH_VALIDITY $SSH_PATH $SSH_OPTIONS
+
+ssh-keygen -Lf "$SSH_DIR/${SAFE_NAME}.ssh-cert.pub"
+
+popd > /dev/null
+
+echo -e "$SUCC SSH certificate for $SAFE_NAME at $SSH_DIR/${SAFE_NAME}.ssh-cert.pub created."

@@ -62,6 +62,9 @@ init_ca_home "${CA_DIR}"
 trap 'rm -Rf "${CA_DIR}"' 0
 
 # early verification of root ca password
+if [ -n "$CA_ENABLE_ENGINE" ]; then
+    echo -e "$NOTE Your CA key is on PKCS11 device, enter PIN."
+fi
 echo -e -n "$INPUT Enter passphase for root CA key: "
 read -r -s PARENT_PASS
 echo
@@ -70,11 +73,11 @@ openssl_engine_cmd='
     -engine pkcs11 
     -inform engine
     -in pkcs11:object=SIGN%20key'
-openssl rsa \
+CA_PARENT_MODULUS=$(openssl rsa \
             ${CA_ENABLE_ENGINE:+$openssl_engine_cmd} \
             $( [ -z $CA_ENABLE_ENGINE ] && echo "-check -in ca/private/ca.key") \
-            -noout \
-            -passin env:CA_PARENT_PASS
+            -noout -modulus \
+            -passin env:CA_PARENT_PASS)
 
 CA_PARENT_ENABLE_ENGINE=$CA_ENABLE_ENGINE
 
@@ -89,9 +92,24 @@ if [ -n "${CERT_CN}" ]; then
 fi
 
 if [[ -n $CA_ENABLE_ENGINE ]]; then
-    if [[ -n $CA_PARENT_ENABLE_ENGINE ]]; then
-        echo -e "$NOTE WARNING: please make sure you have the proper pkcs11 device inserted. Do not have your root CA inserted."
-    fi
+    LOOP=1
+    while [[ -n $CA_PARENT_ENABLE_ENGINE ]] && [[ -n $LOOP ]]; do
+        echo -e "$ERR WARNING: please make sure you have the proper pkcs11 device inserted. Do not have your root CA inserted."
+        echo -e -n "$INPUT Are you SURE you wish to continue? [y/N]: "
+        read -r SURE
+        if [ "${SURE}" != "y" ] && [ "${SURE}" != "Y" ]; then
+            echo -e "$ERR Exiting."
+            exit 1
+        fi
+        CA_MODULUS=$(openssl rsa \
+            ${CA_ENABLE_ENGINE:+$openssl_engine_cmd} \
+            $( [ -z $CA_ENABLE_ENGINE ] && echo "-check -in ca/private/ca.key") \
+            -noout -modulus \
+            -passin env:CA_PARENT_PASS)
+        if [[ $CA_PARENT_MODULUS != $CA_MODULUS ]] ; then
+            LOOP=
+        fi
+    done
     init_engine
     init_slot 9c "${CA_DIR}/ca/ca.pub"
     echo -e -n "$INPUT Enter PIN for signing sub-CA key: "
@@ -125,22 +143,24 @@ export SAN=""
 pushd "${CA_DIR}" > /dev/null
 
 # Generate the signing CA openssl config
+echo enter template
 template "${BIN_DIR}/templates/signing.tpl" "ca/ca.conf"
+echo exit template
+# Generate the signing CA openssh config
+mkdir -p ca/ssh
+echo $( od -vAn -N2 -tu2 < /dev/urandom )00 > ca/ssh/serial
 
 echo -e "$NOTE Creating the signing sub-CA key"
 
 # Create the signing CA key
 if [[ -z $CA_ENABLE_ENGINE ]]; then
-    echo -e "$NOTE Creating the signing sub-CA key (${CA_KEY_ALG} with ${CA_KEY_LENGTH_ROOTCA} bits)"
-
-    openssl genrsa -out ca/private/ca.key -"${CA_KEY_ALG}" -passout env:CA_PASS "${CA_KEY_LENGTH_ROOTCA}"
-    chmod 0400 ca/private/ca.key
-    openssl rsa -in ca/private/ca.key -pubout -out ca/ca.pub
+    generate_key ca/private/ca.key
+    ln -s ../private/ca.key ca/ssh/ca.ssh
+    generate_pubkey ca/private/ca.key ca/ca.pub
 else
-    echo -e "$NOTE Signing sub-CA key should already exist via pkcs11 engine."
+    generate_pubkey_pkcs11 pkcs11:object=SIGN%20key ca/ca.pub
 fi
-ssk-keygen -f ca/ca.pub -i -mPKCS8 \
-        | awk "{printf \$0;print \" ${CA_DIR}\"}" > ca/ca.ssh.pub
+generate_pubkey_ssh ca/ca.pub ca/ssh/ca.ssh.pub ${CA_DIR}
 
 echo -e "$NOTE Creating the signing sub-CA csr"
 
@@ -158,8 +178,9 @@ openssl req -new -batch \
 echo -e "$NOTE Creating the signing sub-CA certificate"
 
 pushd "${PARENT}" > /dev/null
-if [[ -n $CA_PARENT_ENABLE_ENGINE ]]; then
-    echo -e "$NOTE WARNING: please make sure you have the proper pkcs11 device inserted. You are signing the sub-CA with the root CA device. Do not have your sub-CA device inserted."
+
+if [[ -n $CA_PARENT_ENABLE_ENGINE ]] && [[ -n $CA_ENABLE_ENGINE ]] ; then
+    echo -e "$ERR WARNING: please make sure you have the proper pkcs11 device inserted. You are signing the sub-CA with the root CA device. Do not have your sub-CA device inserted."
     echo -e -n "$INPUT Are you SURE you wish to continue? [y/N]: "
     read -r SURE
     if [ "${SURE}" != "y" ] && [ "${SURE}" != "Y" ]; then
@@ -182,13 +203,24 @@ openssl ca \
    -passin env:CA_PARENT_PASS
 
 if [[ -n "$CA_ENABLE_ENGINE" ]]; then
-    echo -e "$NOTE WARNING: please make sure you have the proper pkcs11 device inserted. You are uploading the sub-CA cert. Insert the sub-CA deivce."
-    echo -e -n "$INPUT Are you SURE you wish to continue? [y/N]: "
-    read -r SURE
-    if [ "${SURE}" != "y" ] && [ "${SURE}" != "Y" ]; then
-        echo -e "$ERR Exiting."
-        exit 1
-    fi
+    LOOP=1
+    while [[ -n $CA_PARENT_ENABLE_ENGINE ]] && [[ -n $LOOP ]]; do
+        echo -e "$ERR WARNING: please make sure you have the proper pkcs11 device inserted. Do not have your root CA inserted."
+        echo -e -n "$INPUT Are you SURE you wish to continue? [y/N]: "
+        read -r SURE
+        if [ "${SURE}" != "y" ] && [ "${SURE}" != "Y" ]; then
+            echo -e "$ERR Exiting."
+            exit 1
+        fi
+        CA_MODULUS=$(openssl rsa \
+            ${CA_ENABLE_ENGINE:+$openssl_engine_cmd} \
+            $( [ -z $CA_ENABLE_ENGINE ] && echo "-check -in ca/private/ca.key") \
+            -noout -modulus \
+            -passin env:CA_PARENT_PASS)
+        if [[ $CA_PARENT_MODULUS != $CA_MODULUS ]] ; then
+            LOOP=
+        fi
+    done
     replace_crt 9c "${CA_DIR}/ca/ca.crt"
 fi
 popd > /dev/null

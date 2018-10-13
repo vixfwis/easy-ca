@@ -6,12 +6,14 @@
 # Derek Moore <derek@ripple.com>
 # Christian Göttsche <cgzones@googlemail.com>
 
+export TZ=
 # Binaries copied during install
 export BINARIES_ROOT="
 create-signing-ca
 create-server
 create-client
 sign-csr
+sign-ssh
 revoke-cert
 functions
 show-status
@@ -30,6 +32,7 @@ export BINARIES_SIGN="
 create-server
 create-client
 sign-csr
+sign-ssh
 revoke-cert
 functions
 show-status
@@ -192,12 +195,13 @@ CA_CERT_ST="${CA_CERT_ST}"
 CA_CERT_L="${CA_CERT_L}"
 CA_CERT_O="${CA_CERT_O}"
 CA_CERT_OU="${CA_CERT_OU}"
-CA_ENABLE_ENGINE="${CA_ENABLE_ENGINE}"
 
 CA_KEY_ALG="${CA_KEY_ALG}"
 CA_KEY_LENGTH_ROOTCA="${CA_KEY_LENGTH_ROOTCA}"
 CA_KEY_LENGTH_SIGNCA="${CA_KEY_LENGTH_SIGNCA}"
 CA_KEY_LENGTH_ENDCRT="${CA_KEY_LENGTH_ENDCRT}"
+
+CA_ENABLE_ENGINE="${CA_ENABLE_ENGINE}"
 EOF
 }
 
@@ -286,12 +290,43 @@ ask_client_cert_questions() {
     fi
 }
 
+function generate_key(){
+    local KEYPATH=$1
+    echo -e "$NOTE Creating the key (${CA_KEY_ALG} with ${CA_KEY_LENGTH_ROOTCA} bits)"
+    openssl genrsa -out $KEYPATH -"${CA_KEY_ALG}" -passout env:CA_PASS "${CA_KEY_LENGTH_ROOTCA}"
+    chmod 0400 $KEYPATH
+}
+function generate_pubkey(){
+    local KEYPATH=$1
+    local PUBPATH=$2
+    openssl rsa -in $KEYPATH -pubout -out $PUBPATH -passin env:CA_PASS
+}
+function generate_pubkey_pkcs11(){
+    local KEYPATH=$1
+    local PUBPATH=$2
+    echo -e "$NOTE CA key should already exist via pkcs11 engine."
+    openssl rsa -engine pkcs11 -inform engine \
+                -in $KEYPATH -pubout -out $PUBPATH -passin env:CA_PASS
+}
+
+function generate_pubkey_ssh(){
+    local PUBPATH=$1
+    local SSHPUBPATH=$2
+    local NAME=$3
+    echo -e "$NOTE Creating SSH pub ($SSHPUBPATH)"
+    echo -e "$NOTE Example in sshd_config: TrustedUserCAKeys ca.ssh.pub"
+
+    ssh-keygen -f $PUBPATH -i -mPKCS8 \
+            | awk "{printf \$0;print \" $3\"}" > $SSHPUBPATH
+    ssh-keygen -lvf $SSHPUBPATH
+}
 ##
 ## PKCS11 support functions, currently hard coded to support yubikeys using ykman
 ##
 function init_slot(){
     local SLOT=$1
     local PUB=$2
+    local SLOTPKCS=$3
     echo -e -n "$INPUT Do you wish to create a new key in slot $SLOT? [y/N]: "
     read -r SURE
     if [ "${SURE}" == "y" ] || [ "${SURE}" == "Y" ]; then
@@ -299,6 +334,8 @@ function init_slot(){
         # This cert is to make PKCS11 happy.
         # Should replace this with the proper cert later in the process.
         ykman piv generate-certificate "$SLOT" "$PUB" -s 'bootstrap'
+    else
+        generate_pubkey_pkcs11 "$SLOTPKCS" "$PUB"
     fi
 }
 function replace_crt(){
@@ -311,8 +348,8 @@ function replace_crt(){
     fi
 }
 function init_engine(){
-    local SLOT=$1
     echo -e "$NOTE THIS WILL RESET YOUR YUBIKEY USING YKMAN"
+    echo -e "$NOTE Run 'ykman piv reset' on your own to set PIN/PUK/management keys properly."
     echo -e -n "$INPUT Do you wish to reset your device? [y/N]: "
     read -r SURE
     if [ "${SURE}" == "y" ] || [ "${SURE}" == "Y" ]; then

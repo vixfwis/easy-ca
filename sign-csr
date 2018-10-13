@@ -43,7 +43,7 @@ CSR_PATH=
 CSR_NAME=
 CSR_TYPE="clients"
 
-while getopts c:F:m:h FLAG; do
+while getopts c:sF:m:h FLAG; do
     case $FLAG in
         c) CSR_PATH=${OPTARG} ;;
         s) CSR_TYPE="server" ;;
@@ -118,6 +118,12 @@ export CA_CERT_MAIL="$CSR_CERT_MAIL"
 
 cp --suffix ".old" -b -f -u "$CSR_PATH" "certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.csr"
 template "$BIN_DIR/templates/$CSR_TYPE.tpl" "certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.conf"
+
+openssl req -in "certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.csr" -pubkey \
+            -out "certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.pub"
+
+ssh-keygen -f "certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.pub" -i -mPKCS8 \
+        | awk "{printf \$0;print \" ${SAFE_NAME}\"}" > "certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.ssh.pub"
 
 echo -e "$NOTE Creating the certificate (overwriting C,ST,L,O,OU DN fields)."
 

@@ -101,19 +101,19 @@ pushd "${CA_DIR}" > /dev/null
 
 # Generate the root CA openssl config
 template "${BIN_DIR}/templates/root.tpl" "ca/ca.conf"
+# Generate the root CA openssh config
+mkdir -p ca/ssh
+echo $( od -vAn -N2 -tu2 < /dev/urandom )00 > ca/ssh/serial
 
 # Create the signing CA key
 if [[ -z $CA_ENABLE_ENGINE ]]; then
-    echo -e "$NOTE Creating the root CA key (${CA_KEY_ALG} with ${CA_KEY_LENGTH_ROOTCA} bits)"
-
-    openssl genrsa -out ca/private/ca.key -"${CA_KEY_ALG}" -passout env:CA_PASS "${CA_KEY_LENGTH_ROOTCA}"
-    chmod 0400 ca/private/ca.key
-    openssl rsa -in ca/private/ca.key -pubout -out ca/ca.pub
+    generate_key ca/private/ca.key
+    ln -s ../private/ca.key ca/ssh/ca.ssh
+    generate_pubkey ca/private/ca.key ca/ca.pub
 else
-    echo -e "$NOTE Root CA key should already exist via pkcs11 engine."
+    generate_pubkey_pkcs11 pkcs11:object=SIGN%20key ca/ca.pub
 fi
-ssk-keygen -f ca/ca.pub -i -mPKCS8 \
-        | awk "{printf \$0;print \" ${CA_DIR}\"}" > ca/ca.ssh.pub
+generate_pubkey_ssh ca/ca.pub ca/ssh/ca.ssh.pub ${CA_DIR}
 
 echo -e "$NOTE Creating the root CA csr"
 
