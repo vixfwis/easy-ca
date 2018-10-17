@@ -36,9 +36,11 @@ usage() {
     echo
 }
 
+NORM_CSR=1
 if [ ! -f ca/ca.crt ]; then
-    echo -e "$ERR Must be run inside a CA directory!"
-    exit 2
+    echo -e "$NOTE This will create a defualt csr which can be sent to a CA"
+    echo -e "$NOTE A directory will be created at $(pwd)/certs"
+    NORM_CSR=
 fi
 
 CSR_PATH=
@@ -78,7 +80,7 @@ if [ -f "certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.crt" ]; then
     exit 1
 fi
 
-pushd "${BIN_DIR}/.." > /dev/null
+pushd "${BIN_DIR}${NORM_CSR:+/..}" > /dev/null
 
 mkdir -p "certs/$CSR_TYPE/$SAFE_NAME/ssh"
 
@@ -93,7 +95,7 @@ fi
 export SAN="email:$CA_CERT_MAIL"
 template "${BIN_DIR}/templates/$CSR_TYPE.tpl" "certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.conf"
 
-echo -e "$NOTE Key is ${CSR_KEY:-" being created"}"
+echo -e "$NOTE Key is ${CSR_KEY:-"being created"}"
 
 ENABLE_ENGINE=
 if [[ -z "$CSR_KEY" ]]; then
@@ -104,6 +106,12 @@ if [[ -z "$CSR_KEY" ]]; then
         init_slot 9a "certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.pub"
     else
         ENABLE_ENGINE=
+        if [ ! -f "certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.key" ]; then
+            openssl genrsa -out "certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.key" -"${CA_KEY_ALG}" --passout env CA_PASS 2048
+            openssl sa -in "certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.key" \
+                -pubout -out "certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.pub"
+        fi
+
     fi
 else
     cp "$CSR_KEY" "certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.key"

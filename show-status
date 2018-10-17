@@ -49,7 +49,6 @@ fi
 
 if [ ! -f ca/ca.csr ]; then
     echo -e "$ERR No 'ca/ca.csr' file!'";
-    exit 2
 fi
 
 if [ ! -f ca/chain.pem ]; then
@@ -99,7 +98,6 @@ fi
 
 if [ ! -f ca/private/ca.key ] && [ -z "${CA_ENABLE_ENGINE}" ]; then
     echo -e "$ERR No 'ca/private/ca.key' file!'";
-    exit 2
 fi
 
 if [ ! -d ca/private ]; then
@@ -148,18 +146,22 @@ echo -e "$NOTE     Signed Certificates        " $certs
 
 if ! openssl crl -in "$ROOT_DIR/ca/ca.crl" -CAfile "$CA_CRT" >/dev/null 2>&1; then
     echo -e "$ERR Certificate revocation list not valid!"
-    exit 2
-fi
-
-if [ "$(openssl crl -in "$ROOT_DIR/ca/ca.crl" -text -noout | grep -c 'No Revoked Certificates.')" -eq 1 ]; then
-    revoked_certs=0
+    skip=1
 else
-    revoked_certs=$(openssl crl -in "$ROOT_DIR/ca/ca.crl" -text -noout | grep -c 'Revocation Date: ')
+    skip=
 fi
-echo -e "$NOTE     Revoked Certificates        $revoked_certs"
 
-revoked_lists=$(($(cat "$ROOT_DIR/ca/db/crl.srl") - 1))
-echo -e "$NOTE     Revoke Certificates Lists  "  $revoked_lists
+if [ -z $skip ]; then
+    if [ "$(openssl crl -in "$ROOT_DIR/ca/ca.crl" -text -noout | grep -c 'No Revoked Certificates.')" -eq 1 ]; then
+        revoked_certs=0
+    else
+        revoked_certs=$(openssl crl -in "$ROOT_DIR/ca/ca.crl" -text -noout | grep -c 'Revocation Date: ')
+    fi
+    echo -e "$NOTE     Revoked Certificates        $revoked_certs"
+
+    revoked_lists=$(($(cat "$ROOT_DIR/ca/db/crl.srl") - 1))
+    echo -e "$NOTE     Revoke Certificates Lists  "  $revoked_lists
+fi
 
 
 skip=$rootCA
@@ -170,7 +172,6 @@ if [ $certs -gt 0 ]; then
         if [ $skip -eq 1 ]; then
             skip=0
         else
-
 
             if [[ "$line" == "V"* ]]; then
                 ca_number=$(echo "$line" | tr -s ' \t' ' ' | cut -d ' ' -f 3)

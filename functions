@@ -12,9 +12,11 @@ export BINARIES_ROOT="
 create-signing-ca
 create-server
 create-client
+create-csr
 sign-csr
 sign-ssh
 revoke-cert
+import-ca
 functions
 show-status
 gen-html
@@ -29,11 +31,14 @@ sign_index.tpl
 "
 
 export BINARIES_SIGN="
+create-signing-ca
 create-server
 create-client
+create-csr
 sign-csr
 sign-ssh
 revoke-cert
+import-ca
 functions
 show-status
 gen-html
@@ -43,6 +48,7 @@ export TEMPLATES_SIGN="
 clients.tpl
 server.tpl
 sign_index.tpl
+signing.tpl
 "
 
 # Output highlighting
@@ -204,6 +210,50 @@ CA_KEY_LENGTH_ENDCRT="${CA_KEY_LENGTH_ENDCRT}"
 CA_ENABLE_ENGINE="${CA_ENABLE_ENGINE}"
 EOF
 }
+generate_conf_import() {
+    DEST="$1"
+    local CRT="$2"
+
+    echo -e -n "$INPUT Short label for CA [${CA_NAME}]: "
+    read -r NAME
+    if [ -n "${NAME}" ]; then
+        CA_NAME=$(echo "${NAME}" | sed 's/[^A-Za-z0-9-]/-/g')
+    fi
+
+    CA_DOMAIN=$(openssl x509 -in "$CRT" -noout -subject -nameopt multiline | sed -n 's/ *commonName *= //p')
+    export CA_CERT_CN="$CA_DOMAIN"
+    echo -e "$SUCC Common name for new certificates:         ${CA_DOMAIN}"
+    CA_CERT_C=$(openssl x509 -in "$CRT" -noout -subject -nameopt multiline | sed -n 's/ *countryName *= //p')
+    echo -e "$SUCC Country code for new certificates:        ${CA_CERT_C}"
+    CA_CERT_ST=$(openssl x509 -in "$CRT" -noout -subject -nameopt multiline | sed -n 's/ *stateOrProvinceName *= //p')
+    echo -e "$SUCC State code for new certificates:          ${CA_CERT_ST}"
+    CA_CERT_L=$(openssl x509 -in "$CRT" -noout -subject -nameopt multiline | sed -n 's/ *localityName *= //p')
+    echo -e "$SUCC City for new certificates:                ${CA_CERT_L}"
+    CA_CERT_O=$(openssl x509 -in "$CRT" -noout -subject -nameopt multiline | sed -n 's/ *organizationName *= //p')
+    echo -e "$SUCC Organization for new certificates:        ${CA_CERT_O}"
+    CA_CERT_OU=$(openssl x509 -in "$CRT" -noout -subject -nameopt multiline | sed -n 's/ *organizationalUnitName *= //p')
+    echo -e "$SUCC Organizational Unit for new certificates: ${CA_CERT_OU}"
+
+    echo
+
+    cat > "${DEST}" << EOF
+CA_DOMAIN="${CA_DOMAIN}"
+CA_NAME="${CA_NAME}"
+
+CA_CERT_C="${CA_CERT_C}"
+CA_CERT_ST="${CA_CERT_ST}"
+CA_CERT_L="${CA_CERT_L}"
+CA_CERT_O="${CA_CERT_O}"
+CA_CERT_OU="${CA_CERT_OU}"
+
+CA_KEY_ALG="${CA_KEY_ALG}"
+CA_KEY_LENGTH_ROOTCA="${CA_KEY_LENGTH_ROOTCA}"
+CA_KEY_LENGTH_SIGNCA="${CA_KEY_LENGTH_SIGNCA}"
+CA_KEY_LENGTH_ENDCRT="${CA_KEY_LENGTH_ENDCRT}"
+
+CA_ENABLE_ENGINE="${CA_ENABLE_ENGINE}"
+EOF
+}
 
 ##
 ## ask_server_cert_quesetions
@@ -284,7 +334,7 @@ ask_client_cert_questions() {
     read -r CERT_MAIL
     if [ -n "${CERT_MAIL}" ]; then
         CA_CERT_MAIL="${CERT_MAIL}"
-    else
+    elif [ -z "${CA_CERT_MAIL}" ]; then
         echo -e "$ERR No email address supplied, exiting."
         exit 1
     fi
@@ -295,6 +345,11 @@ function generate_key(){
     echo -e "$NOTE Creating the key (${CA_KEY_ALG} with ${CA_KEY_LENGTH_ROOTCA} bits)"
     openssl genrsa -out $KEYPATH -"${CA_KEY_ALG}" -passout env:CA_PASS "${CA_KEY_LENGTH_ROOTCA}"
     chmod 0400 $KEYPATH
+}
+function extract_pubkey(){
+    local CRTPATH=$1
+    local PUBPATH=$2
+    openssl x509 -in $CRTPATH -pubkey -noout -passin env:CA_PASS > $PUBPATH
 }
 function generate_pubkey(){
     local KEYPATH=$1
@@ -317,7 +372,7 @@ function generate_pubkey_ssh(){
     echo -e "$NOTE Example in sshd_config: TrustedUserCAKeys ca.ssh.pub"
 
     ssh-keygen -f $PUBPATH -i -mPKCS8 \
-            | awk "{printf \$0;print \" $3\"}" > $SSHPUBPATH
+            | awk "{printf \$0;print \" $NAME\"}" > $SSHPUBPATH
     ssh-keygen -lvf $SSHPUBPATH
 }
 ##
@@ -344,8 +399,13 @@ function replace_crt(){
     echo -e -n "$INPUT Do you wish to upload this cert to $SLOT? [y/N]: "
     read -r SURE
     if [ "${SURE}" == "y" ] || [ "${SURE}" == "Y" ]; then
-        ykman piv import-certificate "$SLOT" "$2"
+        ykman piv import-certificate "$SLOT" "$CERT"
     fi
+}
+function extract_crt(){
+    local SLOT=$1
+    local CERT=$2
+    ykman piv export-certificate "$SLOT" "$CERT"
 }
 function init_engine(){
     echo -e "$NOTE THIS WILL RESET YOUR YUBIKEY USING YKMAN"

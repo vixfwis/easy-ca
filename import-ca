@@ -1,0 +1,226 @@
+#!/bin/bash
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+# Derek Moore <derek.moore@gmail.com>
+# Christian Göttsche <cgzones@googlemail.com>
+# Tom Bereknyei <tomberek@gmail.com>
+
+set -eu
+
+umask 0077
+set -o pipefail
+
+BIN_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+source "${BIN_DIR}/functions"
+source "${BIN_DIR}/defaults.conf"
+
+usage() {
+    echo "Usage: $0 [-l] -d CA_DIR"
+    echo "Import CA into the directory CA_DIR"
+    echo
+    echo "Options:"
+    echo "    -d CA_DIR  Target directory to be created and initialized"
+    echo "               Must not exist yet"
+    echo
+    echo "    -c         CA Certificate path"
+    echo
+    echo "    -k         Signing key path"
+    echo
+    echo "    -l         Symlink toolchain (designed for development)"
+    echo
+}
+
+CA_DIR=
+CERT_PATH=
+KEY_PATH=
+SYMLINK=0
+HAS_PARENT=
+if openssl verify -CAfile ca/ca.crt ca/ca.crt >/dev/null 2>&1; then
+    HAS_PARENT=1
+fi
+
+while getopts "d:c:k:hl" FLAG; do
+    case $FLAG in
+        d) CA_DIR=${OPTARG} ;;
+        c) CERT_PATH=${OPTARG} ;;
+        k) KEY_PATH=${OPTARG} ;;
+        h) echo -e -n "$SUCC " && usage && exit 0;;
+        l) SYMLINK=1 ;;
+        *) echo -e -n "$ERR " && usage && exit 2;;
+    esac
+done
+
+if [ $OPTIND -le $# ]; then
+    echo -e -n "$ERR " && usage && exit 2
+elif [[ "${CA_DIR}" = "" ]]; then
+    echo -e -n "$SUCC " && usage && exit 1
+fi
+
+CA_NAME="$( basename "${CA_DIR}" )"
+export CA_NAME
+
+echo -e "$NOTE Creating CA in dir '${CA_DIR}'"
+
+init_ca_home "${CA_DIR}"
+trap 'rm -Rf "${CA_DIR}"' 0
+echo -e -n "$INPUT Enable PKCS11 Engine for this CA? [y/N]: "
+read -r ENABLE_ENGINE
+if [ "${ENABLE_ENGINE}" == "y" ] || [ "${ENABLE_ENGINE}" == "Y" ]; then
+    CA_ENABLE_ENGINE="${ENABLE_ENGINE}"
+else
+    CA_ENABLE_ENGINE=
+fi
+if [[ -n $CA_ENABLE_ENGINE ]]; then
+    # Slot 9c requires PIN entry on every operation.
+    # No need to ask for the PIN for re-use.
+    echo -e -n "$INPUT Enter PIN for signing CA key: "
+    read -r -s PASS1
+    echo
+    if [[ ${#PASS1} -lt 4 ]]; then
+        echo -e "$ERR Passphrase is too short, please use at least 4 characters!"
+        exit 1
+    fi
+elif [ -z "$CERT_PATH" ]; then
+    echo -e "$ERR Must provide certificate via file or PKCS11."
+    exit 1
+fi
+
+export SAN=""
+
+CA_PATH="$( fullpath "${CA_DIR}")"
+CERT_FULL_PATH="$( fullpath "${CERT_PATH}")"
+KEY_FULL_PATH="$( fullpath "${KEY_PATH}")"
+export CA_PATH
+
+pushd "${CA_DIR}" > /dev/null
+
+# Import the signing CA key and cert
+echo -e "$NOTE Importing the signed CA certificate"
+mkdir -p ca/ssh
+echo $( od -vAn -N2 -tu2 < /dev/urandom )00 > ca/ssh/serial
+
+PASS1=
+if [ -z "$CA_ENABLE_ENGINE" ]; then
+    cp $CERT_FULL_PATH ca/ca.crt
+    if [ -n "$KEY_PATH" ] ; then
+        echo
+        echo -e -n "$INPUT Enter passphase for CA key: "
+        read -r -s PASS1
+        echo
+        if [[ ${#PASS1} -lt 4 ]]; then
+            echo -e "$ERR Passphrase is too short, please use at least 4 characters!"
+            exit 1
+        fi
+        echo -e -n "$INPUT Verifying - Enter passphase for encrypting CA key: "
+        read -r -s PASS2
+        echo
+        if [[ "${PASS1}" != "${PASS2}" ]]; then
+            echo -e "$ERR Passphrases did not match, exiting."
+            exit 1
+        fi
+        cp $KEY_FULL_PATH ca/private/ca.key
+        ln -s ../private/ca.key ca/ssh/ca.ssh
+    fi
+else
+    extract_crt 9c ca/ca.crt
+fi
+export CA_PASS="${PASS1}"
+mkdir -p ca/archive
+
+# Fix metadata
+cp ca/ca.crt ca/archive/01.pem
+CA_SRL=02
+
+extract_pubkey ca/ca.crt ca/ca.pub
+generate_pubkey_ssh ca/ca.pub ca/ssh/ca.ssh.pub ${CA_DIR}
+
+# Generate the CA openssl config
+echo -n $CA_SRL > ca/db/crt.srl
+generate_conf_import "./bin/defaults.conf" ca/ca.crt
+
+source "./bin/defaults.conf"
+
+template "${BIN_DIR}/templates/signing.tpl" "ca/ca.conf"
+
+# Create csr if needed
+echo -e -n "$NOTE Create a CA csr? [y/N] "
+read -r SURE
+if [ "${SURE}" == "y" ] || [ "${SURE}" == "Y" ]; then
+    openssl_engine_cmd="\
+        -engine pkcs11 \
+        -keyform engine \
+        -key pkcs11:object=SIGN%20key"
+
+    openssl req -new -batch \
+        ${CA_ENABLE_ENGINE:+$openssl_engine_cmd} \
+        $( [ -z $CA_ENABLE_ENGINE ] && echo "-key ca/private/ca.key") \
+        -config ca/ca.conf \
+        -out ca/ca.csr \
+        -passin env:CA_PASS
+    echo -e "$NOTE Get the csr signed. TODO"
+fi
+
+echo
+
+ln -s ca.crt ca/chain.pem
+ln -s ca.crt ca/root.crt
+
+echo
+
+if [ -n "${CA_ENABLE_ENGINE}" ] || [ -n "${KEY_PATH}" ] ; then
+    echo -e "$NOTE Creating the CA CRL"
+
+    SAN="imported"
+    openssl_engine_cmd="\
+        -engine pkcs11 \
+        -keyform engine \
+        -keyfile pkcs11:object=SIGN%20key"
+    openssl ca -gencrl -batch \
+               ${CA_ENABLE_ENGINE:+$openssl_engine_cmd} \
+               -config ca/ca.conf \
+               -out ca/ca.crl \
+               -passin env:CA_PASS \
+               -verbose
+else
+    echo -e "$NOTE Cannot create CRL without key"
+fi
+
+# More meta, add it when signed, add import crt function?
+echo -e "V\tunknown\t${CA_SRL}\tunknown\t$(openssl x509 -in ca/ca.crt -noout -subject -nameopt sname | sed 's/, /\//g; s/subject=//g;')" > ca/db/certificate.db
+
+
+echo
+if [ $SYMLINK -eq 1 ]; then
+    echo -e "$NOTE Symlinking toolchain (dev mode)"
+    CP_CMD='ln -s'
+else
+    echo -e "$NOTE Copying toolchain"
+    CP_CMD='cp'
+fi
+
+for BIN in ${BINARIES_ROOT}; do
+    $CP_CMD "${BIN_DIR}/${BIN}" bin/
+done
+mkdir bin/templates/
+for TPL in ${TEMPLATES_ROOT}; do
+    $CP_CMD "${BIN_DIR}/templates/${TPL}" bin/templates/
+done
+
+# PARENT only
+if [ -n "$HAS_PARENT" ]; then
+    cd ..
+    SRL=$(cat ca/db/crt.srl)
+    echo $((SRL+1)) > ca/db/crt.srl
+    cp "${CA_DIR}"/ca/ca.crt ca/archive/"$SRL".pem
+    echo -e "V\tunknown\t${CA_SRL}\tunknown\t$(openssl x509 -in "${CA_DIR}"/ca/ca.crt -noout -subject -nameopt sname | sed 's/, /\//g; s/subject=//g;')" > ca/db/certificate.db
+fi
+
+popd > /dev/null
+
+unset CA_PASS
+
+trap 0
+
+echo -e "$SUCC CA initialized."
