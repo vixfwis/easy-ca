@@ -66,11 +66,11 @@ export CSR_SUBJ=$(openssl req -utf8 -in "$CSR_PATH" -noout -subject -nameopt mul
 export CSR_CERT_CN=$(echo "$CSR_SUBJ" | grep -P '^\s+commonName' | cut -d '=' -f 2- | sed -e 's/^[[:space:]]*//')
 export CSR_CERT_MAIL=${CSR_CERT_MAIL:-$(echo "$CSR_SUBJ" | grep -P '^\s+emailAddress' | cut -d '=' -f 2- | sed -e 's/^[[:space:]]*//')}
 if [ -z "$CSR_CERT_CN" ]; then
-    echo -e "$ERR No name supplied in request, exiting."
+    echo -e "$ERR No name supplied in request, exiting." >&2
     exit 1
 fi
 if [ -z "$CSR_CERT_MAIL" ]; then
-    echo -e "$ERR No email address supplied in request, exiting."
+    echo -e "$ERR No email address supplied in request, exiting." >&2
     exit 1
 fi
 
@@ -81,22 +81,21 @@ else
 fi
 
 if [ -f "certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.crt" ]; then
-    echo -e "$ERR Certificate already exist for '$CSR_CERT_CN' ($SAFE_NAME), exiting."
+    echo -e "$ERR Certificate already exist for '$CSR_CERT_CN' ($SAFE_NAME), exiting." >&2
     exit 1
 fi
 
-echo -e "$NOTE Signing CSR for '$CSR_CERT_CN' with email address '$CSR_CERT_MAIL'"
+echo -e "$NOTE Signing CSR for '$CSR_CERT_CN' with email address '$CSR_CERT_MAIL'" >&2
 
 pushd "${BIN_DIR}/.." > /dev/null
 
 echo
 if [ -n "$CA_ENABLE_ENGINE" ]; then
-    echo -e "$NOTE Your CA key is on PKCS11 device, enter PIN."
+    echo -e "$NOTE Your CA key is on PKCS11 device, enter PIN." >&2
 fi
-echo -e -n "$INPUT Enter passphase for signing CA key (verify the above informations!):"
-read -r -s PASS
-echo
-export CA_PASS="$PASS"
+PASS=`ask -s "$INPUT Enter passphrase for signing CA key: " CA_SIGN_PASS_DEFAULT "${SIGN_PASS:-""}"`
+echo >&2
+export CA_PASS="${PASS}"
 
 openssl_engine_cmd='
     -engine pkcs11 
@@ -108,7 +107,7 @@ openssl rsa \
             -noout \
             -passin env:CA_PASS
 
-echo -e "$NOTE Creating $CSR_TYPE directory certs/$CSR_TYPE/$SAFE_NAME"
+echo -e "$NOTE Creating $CSR_TYPE directory certs/$CSR_TYPE/$SAFE_NAME" >&2
 mkdir -p "certs/$CSR_TYPE/$SAFE_NAME"
 
 # Generate the client cert openssl config
@@ -125,7 +124,7 @@ openssl req -in "certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.csr" -pubkey \
 ssh-keygen -f "certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.pub" -i -mPKCS8 \
         | awk "{printf \$0;print \" ${SAFE_NAME}\"}" > "certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.ssh.pub"
 
-echo -e "$NOTE Creating the certificate (overwriting C,ST,L,O,OU DN fields)."
+echo -e "$NOTE Creating the certificate (overwriting C,ST,L,O,OU DN fields)." >&2
 
 # Create the client certificate overwriting CSR values
 openssl_engine_cmd="\
@@ -141,7 +140,7 @@ openssl ca -batch -notext \
            -subj "/C=${CA_CERT_C}/ST=${CA_CERT_ST}/L=${CA_CERT_L}/O=${CA_CERT_O}/OU=${CA_CERT_OU}/CN=${CA_USERNAME}/emailAddress=${CSR_CERT_MAIL}" \
            -passin env:CA_PASS
 
-echo -e "$NOTE Verifying trusted chain"
+echo -e "$NOTE Verifying trusted chain" >&2
 
 openssl verify -CAfile ca/chain.pem "certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.crt"
 
@@ -149,4 +148,4 @@ popd > /dev/null
 
 unset CA_PASS
 
-echo -e "$SUCC Client certificate for '$CSR_CERT_CN' created."
+echo -e "$SUCC Client certificate for '$CSR_CERT_CN' created." >&2

@@ -133,164 +133,109 @@ init_ca_home() {
 generate_conf() {
     DEST="$1"
 
-    echo -e -n "$INPUT Enable PKCS11 Engine for this CA? [y/N]: "
-    read -r ENABLE_ENGINE
-    if [ "${ENABLE_ENGINE}" == "y" ] || [ "${ENABLE_ENGINE}" == "Y" ]; then
-        CA_ENABLE_ENGINE="${ENABLE_ENGINE}"
+    SURE=`ask "$INPUT Enable PKCS11 Engine for this CA? [y/N]: " CA_USE_PKCS11 "N"`
+    if [ "$SURE" == "y" ] || [ "$SURE" == "Y" ]; then
+        CA_ENABLE_ENGINE=1
     else
         CA_ENABLE_ENGINE=
     fi
 
-    echo -e -n "$INPUT Short label for new CA [${CA_NAME}]: "
-    read -r NAME
-    if [ -n "${NAME}" ]; then
-        CA_NAME=$(echo "${NAME}" | sed 's/[^A-Za-z0-9-]/-/g')
-    fi
+    CA_NAME=`ask "$INPUT Short label for new CA [${CA_NAME}]: " CA_NAME_DEFAULT "$CA_NAME"`
+    CA_NAME="$(echo "$CA_NAME" | sed 's/[^A-Za-z0-9-]/-/g')"
 
-    echo -e -n "$INPUT Domain name for new CA [${CA_DOMAIN}]: "
-    read -r DOMAIN
-    if [ -n "${DOMAIN}" ]; then
-        CA_DOMAIN="${DOMAIN}"
-    elif [ -z "${CA_DOMAIN}" ]; then
-        echo -e "$ERR Domain is required."
+    CA_DOMAIN=`ask "$INPUT Domain name for new CA [${CA_DOMAIN}]: " CA_DOMAIN_DEFAULT "$CA_DOMAIN"`
+    if [ -z "${CA_DOMAIN}" ]; then
+        echo -e "$ERR Domain is required." >&2
         exit 1
     fi
 
-    echo
-    echo -e "$SUCC CRL URL will be https://${CA_DOMAIN}/ca/${CA_NAME}.crl"
-    echo
+    echo >&2
+    echo -e "$SUCC CRL URL will be https://${CA_DOMAIN}/ca/${CA_NAME}.crl" >&2
+    echo >&2
 
-    echo -e -n "$INPUT Default country code for new certificates [${CA_CERT_C}]: "
-    read -r CERT_C
-    if [ -n "${CERT_C}" ]; then
-        CA_CERT_C="${CERT_C}"
-    fi
+    CA_CERT_C=`ask "$INPUT Country code for new certificates [${CA_CERT_C}]: " CA_CERT_C_DEFAULT "${CA_CERT_C}"`
+    CA_CERT_ST=`ask "$INPUT State for new certificates [${CA_CERT_ST}]: " CA_CERT_ST_DEFAULT "${CA_CERT_ST}"`
+    CA_CERT_L=`ask "$INPUT City for new certificates [${CA_CERT_L}]: " CA_CERT_L_DEFAULT "${CA_CERT_L}"`
+    CA_CERT_O=`ask "$INPUT Organization for new certificates [${CA_CERT_O}]: " CA_CERT_O_DEFAULT "${CA_CERT_O}"`
+    CA_CERT_OU=`ask "$INPUT Organization unit for new certificates [${CA_CERT_OU}]: " CA_CERT_OU_DEFAULT "${CA_CERT_OU}"`
 
-    echo -e -n "$INPUT Default state for new certificates [${CA_CERT_ST}]: "
-    read -r CERT_ST
-    if [ -n "${CERT_ST}" ]; then
-        CA_CERT_ST="${CERT_ST}"
-    fi
-
-    echo -e -n "$INPUT Default city for new certificates [${CA_CERT_L}]: "
-    read -r CERT_L
-    if [ -n "${CERT_L}" ]; then
-        CA_CERT_L="${CERT_L}"
-    fi
-
-    echo -e -n "$INPUT Default organization for new certificates [${CA_CERT_O}]: "
-    read -r CERT_O
-    if [ -n "${CERT_O}" ]; then
-        CA_CERT_O="${CERT_O}"
-    fi
-
-    echo -e -n "$INPUT Default organization unit for new certificates [${CA_CERT_OU}]: "
-    read -r CERT_OU
-    if [ -n "${CERT_OU}" ]; then
-        CA_CERT_OU="${CERT_OU}"
-    fi
-
-    echo
-
-    cat > "${DEST}" << EOF
-CA_DOMAIN="${CA_DOMAIN}"
-CA_NAME="${CA_NAME}"
-
-CA_CERT_C="${CA_CERT_C}"
-CA_CERT_ST="${CA_CERT_ST}"
-CA_CERT_L="${CA_CERT_L}"
-CA_CERT_O="${CA_CERT_O}"
-CA_CERT_OU="${CA_CERT_OU}"
-
-CA_KEY_ALG="${CA_KEY_ALG}"
-CA_KEY_LENGTH_ROOTCA="${CA_KEY_LENGTH_ROOTCA}"
-CA_KEY_LENGTH_SIGNCA="${CA_KEY_LENGTH_SIGNCA}"
-CA_KEY_LENGTH_ENDCRT="${CA_KEY_LENGTH_ENDCRT}"
-
-CA_ENABLE_ENGINE="${CA_ENABLE_ENGINE}"
-EOF
+    # Place all CA_* vars into defaults.conf
+    { echo ${!CA_*} | for word in $(cat -) ; do echo "$word=\"${!word:-}\"" ; done ; }  > "${DEST}"
 }
 generate_conf_import() {
     DEST="$1"
     local CRT="$2"
 
-    echo -e -n "$INPUT Short label for CA [${CA_NAME}]: "
-    read -r NAME
-    if [ -n "${NAME}" ]; then
-        CA_NAME=$(echo "${NAME}" | sed 's/[^A-Za-z0-9-]/-/g')
-    fi
+    CA_NAME=`ask "$INPUT Short label for new CA [${CA_NAME}]: " CA_NAME_DEFAULT "$CA_NAME"`
+    CA_NAME="$(echo "$CA_NAME" | sed 's/[^A-Za-z0-9-]/-/g')"
 
     CA_DOMAIN=$(openssl x509 -in "$CRT" -noout -subject -nameopt multiline | sed -n 's/ *commonName *= //p')
+    if [ -z "${CA_DOMAIN}" ]; then
+        echo -e "$ERR Domain is required." >&2
+        exit 1
+    fi
+    echo >&2
+    echo -e "$SUCC CRL URL will be https://${CA_DOMAIN}/ca/${CA_NAME}.crl" >&2
+    echo >&2
+
     export CA_CERT_CN="$CA_DOMAIN"
-    echo -e "$SUCC Common name for new certificates:         ${CA_DOMAIN}"
+
+    echo -e "$SUCC Common name for new certificates:         ${CA_DOMAIN}" >&2
     CA_CERT_C=$(openssl x509 -in "$CRT" -noout -subject -nameopt multiline | sed -n 's/ *countryName *= //p')
-    echo -e "$SUCC Country code for new certificates:        ${CA_CERT_C}"
+    echo -e "$SUCC Country code for new certificates:        ${CA_CERT_C}" >&2
     CA_CERT_ST=$(openssl x509 -in "$CRT" -noout -subject -nameopt multiline | sed -n 's/ *stateOrProvinceName *= //p')
-    echo -e "$SUCC State code for new certificates:          ${CA_CERT_ST}"
+    echo -e "$SUCC State code for new certificates:          ${CA_CERT_ST}" >&2
     CA_CERT_L=$(openssl x509 -in "$CRT" -noout -subject -nameopt multiline | sed -n 's/ *localityName *= //p')
-    echo -e "$SUCC City for new certificates:                ${CA_CERT_L}"
+    echo -e "$SUCC City for new certificates:                ${CA_CERT_L}" >&2
     CA_CERT_O=$(openssl x509 -in "$CRT" -noout -subject -nameopt multiline | sed -n 's/ *organizationName *= //p')
-    echo -e "$SUCC Organization for new certificates:        ${CA_CERT_O}"
+    echo -e "$SUCC Organization for new certificates:        ${CA_CERT_O}" >&2
     CA_CERT_OU=$(openssl x509 -in "$CRT" -noout -subject -nameopt multiline | sed -n 's/ *organizationalUnitName *= //p')
-    echo -e "$SUCC Organizational Unit for new certificates: ${CA_CERT_OU}"
+    echo -e "$SUCC Organizational Unit for new certificates: ${CA_CERT_OU}" >&2
 
-    echo
+    echo >&2
 
-    cat > "${DEST}" << EOF
-CA_DOMAIN="${CA_DOMAIN}"
-CA_NAME="${CA_NAME}"
-
-CA_CERT_C="${CA_CERT_C}"
-CA_CERT_ST="${CA_CERT_ST}"
-CA_CERT_L="${CA_CERT_L}"
-CA_CERT_O="${CA_CERT_O}"
-CA_CERT_OU="${CA_CERT_OU}"
-
-CA_KEY_ALG="${CA_KEY_ALG}"
-CA_KEY_LENGTH_ROOTCA="${CA_KEY_LENGTH_ROOTCA}"
-CA_KEY_LENGTH_SIGNCA="${CA_KEY_LENGTH_SIGNCA}"
-CA_KEY_LENGTH_ENDCRT="${CA_KEY_LENGTH_ENDCRT}"
-
-CA_ENABLE_ENGINE="${CA_ENABLE_ENGINE}"
-EOF
+    { echo ${!CA_*} | for word in $(cat -) ; do echo "$word=\"${!word:-}\"" ; done ; }  > "${DEST}"
 }
 
+##
+## Ask a question if variable not defined
+## Usage: [-s] question env_variable default_value
+##    -s begining of allowing read opts
+ask(){
+    if [ "$1" == "-s" ]; then
+        local readopts=-s
+        shift 1
+    else
+        local readopts=
+    fi
+    local question="$1"
+    local variable="$2"
+    local default="$3"
+    if [ ! -z "${!variable+x}" ] ; then
+        echo -e "$NOTE Using $variable from environment: ${!variable}" >&2
+        echo "${!variable}"
+        return
+    fi
+    echo -e -n "$question" >&2
+    read -r $readopts REPLY
+    if [ -z "${REPLY:-}" ]; then
+        echo -e "$NOTE Using default $variable : $default" >&2
+        echo "$default"
+    else
+        echo "$REPLY"
+    fi
+}
 ##
 ## ask_server_cert_quesetions
 ##
 ## Ask questions to fill a server certifcate
 ##
 ask_server_cert_questions() {
-
-    #echo -e -n "$INPUT Country code for new certificates [${CA_CERT_C}]: "
-    #read -r CERT_C
-    #if [ -n "${CERT_C}" ]; then
-    #    CA_CERT_C="${CERT_C}"
-    #fi
-
-    #echo -e -n "$INPUT State for new certificates [${CA_CERT_ST}]: "
-    #read -r CERT_ST
-    #if [ -n "${CERT_ST}" ]; then
-    #    CA_CERT_ST="${CERT_ST}"
-    #fi
-
-    echo -e -n "$INPUT City for new certificates [${CA_CERT_L}]: "
-    read -r CERT_L
-    if [ -n "${CERT_L}" ]; then
-        CA_CERT_L="${CERT_L}"
-    fi
-
-    #echo -e -n "$INPUT Organization for new certificates [${CA_CERT_O}]: "
-    #read -r CERT_O
-    #if [ -n "${CERT_O}" ]; then
-    #    CA_CERT_O="${CERT_O}"
-    #fi
-
-    echo -e -n "$INPUT Organization unit for new certificates [${CA_CERT_OU}]: "
-    read -r CERT_OU
-    if [ -n "${CERT_OU}" ]; then
-        CA_CERT_OU="${CERT_OU}"
-    fi
+    #CA_CERT_C=`ask "$INPUT Country code for new certificates [${CA_CERT_C}]: " CA_SERVER_CERT_C "${CA_CERT_C}"`
+    CA_CERT_ST=`ask "$INPUT State for new certificates [${CA_CERT_ST}]: " CA_SERVER_CERT_ST "${CA_CERT_ST}"`
+    CA_CERT_L=`ask "$INPUT City for new certificates [${CA_CERT_L}]: " CA_SERVER_CERT_L "${CA_CERT_L}"`
+    #CA_CERT_O=`ask "$INPUT Organization for new certificates [${CA_CERT_O}]: " SERVER_CERT_O "${CA_CERT_O}"`
+    CA_CERT_OU=`ask "$INPUT Organization unit for new certificates [${CA_CERT_OU}]: " CA_SERVER_CERT_OU "${CA_CERT_L}"`
 }
 
 ##
@@ -299,50 +244,21 @@ ask_server_cert_questions() {
 ## Ask questions to fill a client certifcate
 ##
 ask_client_cert_questions() {
-
-    #echo -e -n "$INPUT Country code for new certificates [${CA_CERT_C}]: "
-    #read -r CERT_C
-    #if [ -n "${CERT_C}" ]; then
-    #    CA_CERT_C="${CERT_C}"
-    #fi
-
-    #echo -e -n "$INPUT State for new certificates [${CA_CERT_ST}]: "
-    #read -r CERT_ST
-    #if [ -n "${CERT_ST}" ]; then
-    #    CA_CERT_ST="${CERT_ST}"
-    #fi
-
-    echo -e -n "$INPUT City for new certificates [${CA_CERT_L}]: "
-    read -r CERT_L
-    if [ -n "${CERT_L}" ]; then
-        CA_CERT_L="${CERT_L}"
-    fi
-
-    #echo -e -n "$INPUT Organization for new certificates [${CA_CERT_O}]: "
-    #read -r CERT_O
-    #if [ -n "${CERT_O}" ]; then
-    #    CA_CERT_O="${CERT_O}"
-    #fi
-
-    echo -e -n "$INPUT Organization unit for new certificates [${CA_CERT_OU}]: "
-    read -r CERT_OU
-    if [ -n "${CERT_OU}" ]; then
-        CA_CERT_OU="${CERT_OU}"
-    fi
-
-    echo -e -n "$INPUT Email Address (name@fqdn) for new certificates [${CA_CERT_MAIL}]: "
-    read -r CERT_MAIL
-    if [ -n "${CERT_MAIL}" ]; then
-        CA_CERT_MAIL="${CERT_MAIL}"
-    elif [ -z "${CA_CERT_MAIL}" ]; then
-        echo -e "$ERR No email address supplied, exiting."
+    #CA_CERT_C=`ask "$INPUT Country code for new certificates [${CA_CERT_C}]: " CLIENT_CERT_C "${CA_CERT_C}"`
+    #CA_CERT_ST=`ask "$INPUT State for new certificates [${CA_CERT_ST}]: " CLIENT_CERT_ST "${CA_CERT_ST}"`
+    CA_CERT_L=`ask "$INPUT City for new certificates [${CA_CERT_L}]: " CA_CLIENT_CERT_L "${CA_CERT_L}"`
+    #CA_CERT_O=`ask "$INPUT Organization for new certificates [${CA_CERT_O}]: " CLIENT_CERT_O "${CA_CERT_O}"`
+    CA_CERT_OU=`ask "$INPUT Organization unit for new certificates [${CA_CERT_OU}]: " CA_CLIENT_CERT_OU "${CA_CERT_L}"`
+    CA_CERT_MAIL=`ask "$INPUT Email Address (name@fqdn) for new certificates [${CA_CERT_MAIL}]: " CA_CLIENT_CERT_MAIL "${CA_CERT_MAIL}"`
+    if [ -z "${CA_CERT_MAIL}" ]; then
+        echo -e "$ERR No email address supplied, exiting." >&2
         exit 1
     fi
 }
 
 function generate_key(){
     local KEYPATH=$1
-    echo -e "$NOTE Creating the key (${CA_KEY_ALG} with ${CA_KEY_LENGTH_ROOTCA} bits)"
+    echo -e "$NOTE Creating the key (${CA_KEY_ALG} with ${CA_KEY_LENGTH_ROOTCA} bits)" >&2
     openssl genrsa -out $KEYPATH -"${CA_KEY_ALG}" -passout env:CA_PASS "${CA_KEY_LENGTH_ROOTCA}"
     chmod 0400 $KEYPATH
 }
@@ -359,7 +275,7 @@ function generate_pubkey(){
 function generate_pubkey_pkcs11(){
     local KEYPATH=$1
     local PUBPATH=$2
-    echo -e "$NOTE CA key should already exist via pkcs11 engine."
+    echo -e "$NOTE CA key should already exist via pkcs11 engine." >&2
     openssl rsa -engine pkcs11 -inform engine \
                 -in $KEYPATH -pubout -out $PUBPATH -passin env:CA_PASS
 }
@@ -368,8 +284,8 @@ function generate_pubkey_ssh(){
     local PUBPATH=$1
     local SSHPUBPATH=$2
     local NAME=$3
-    echo -e "$NOTE Creating SSH pub ($SSHPUBPATH)"
-    echo -e "$NOTE Example in sshd_config: TrustedUserCAKeys ca.ssh.pub"
+    echo -e "$NOTE Creating SSH pub ($SSHPUBPATH)" >&2
+    echo -e "$NOTE Example in sshd_config: TrustedUserCAKeys ca.ssh.pub" >&2
 
     ssh-keygen -f $PUBPATH -i -mPKCS8 \
             | awk "{printf \$0;print \" $NAME\"}" > $SSHPUBPATH
@@ -382,8 +298,7 @@ function init_slot(){
     local SLOT=$1
     local PUB=$2
     local SLOTPKCS=$3
-    echo -e -n "$INPUT Do you wish to create a new key in slot $SLOT? [y/N]: "
-    read -r SURE
+    local SURE=`ask "$INPUT Do you wish to create a new key in slot $SLOT? [y/N]: " CA_INIT_SLOT_SURE ""`
     if [ "${SURE}" == "y" ] || [ "${SURE}" == "Y" ]; then
         ykman piv generate-key "$SLOT" "$PUB"
         # This cert is to make PKCS11 happy.
@@ -396,8 +311,7 @@ function init_slot(){
 function replace_crt(){
     local SLOT=$1
     local CERT=$2
-    echo -e -n "$INPUT Do you wish to upload this cert to $SLOT? [y/N]: "
-    read -r SURE
+    local SURE=`ask "$INPUT Do you wish to upload this cert to $SLOT? [y/N]: " CA_REPLACE_SLOT_SURE ""`
     if [ "${SURE}" == "y" ] || [ "${SURE}" == "Y" ]; then
         ykman piv import-certificate "$SLOT" "$CERT"
     fi
@@ -408,10 +322,10 @@ function extract_crt(){
     ykman piv export-certificate "$SLOT" "$CERT"
 }
 function init_engine(){
-    echo -e "$NOTE THIS WILL RESET YOUR YUBIKEY USING YKMAN"
-    echo -e "$NOTE Run 'ykman piv reset' on your own to set PIN/PUK/management keys properly."
-    echo -e -n "$INPUT Do you wish to reset your device? [y/N]: "
-    read -r SURE
+    echo -e "$NOTE THIS WILL RESET YOUR YUBIKEY USING YKMAN" >&2
+    echo -e "$NOTE Run 'ykman piv reset' on your own to set PIN/PUK/management keys properly." >&2
+    echo -e -n "$INPUT Do you wish to reset your device? [y/N]: " >&2
+    local SURE=`ask "$INPUT Do you wish to reset your device? [y/N]: " CA_INIT_ENGINE_SURE ""`
     if [ "${SURE}" == "y" ] || [ "${SURE}" == "Y" ]; then
         ykman piv reset
     fi

@@ -66,27 +66,25 @@ if [[ -n $CA_ENABLE_ENGINE ]]; then
     init_slot 9c "${CA_DIR}/ca/ca.pub"
     # Slot 9c requires PIN entry on every operation.
     # No need to ask for the PIN for re-use.
-    echo -e -n "$INPUT Enter PIN for signing root CA key: "
+    echo -e -n "$INPUT Enter PIN for signing root CA key: " >&2
     read -r -s PASS1
     echo
     if [[ ${#PASS1} -lt 4 ]]; then
-        echo -e "$ERR Passphrase is too short, please use at least 4 characters!"
+        echo -e "$ERR Passphrase is too short, please use at least 4 characters!" >&2
         exit 1
     fi
 else
-    echo
-    echo -e -n "$INPUT Enter passphase for encrypting root CA key: "
-    read -r -s PASS1
-    echo
-    if [[ ${#PASS1} -lt 4 ]]; then
-        echo -e "$ERR Passphrase is too short, please use at least 4 characters!"
+    echo >&2
+    PASS1=`ask -s "$INPUT Enter passphrase for encrypting root CA key: " CA_ROOT_PASS_DEFAULT "${ROOT_PASS:-""}"`
+    echo >&2
+    if [[ "${#PASS1}" -lt 4 ]]; then
+        echo -e "$ERR Passphrase is too short, please use at least 4 characters!" >&2
         exit 1
     fi
-    echo -e -n "$INPUT Verifying - Enter passphase for encrypting root CA key: "
-    read -r -s PASS2
-    echo
+    PASS2=`ask -s "$INPUT Verifying - Enter passphrase for encrypting root CA key: " CA_ROOT_PASS_DEFAULT "${ROOT_PASS:-""}"`
+    echo >&2
     if [[ "${PASS1}" != "${PASS2}" ]]; then
-        echo -e "$ERR Passphrases did not match, exiting."
+        echo -e "$ERR Passphrases did not match, exiting." >&2
         exit 1
     fi
 fi
@@ -115,7 +113,7 @@ else
 fi
 generate_pubkey_ssh ca/ca.pub ca/ssh/ca.ssh.pub ${CA_DIR}
 
-echo -e "$NOTE Creating the root CA csr"
+echo -e "$NOTE Creating the root CA csr" >&2
 
 openssl_engine_cmd="\
     -engine pkcs11 \
@@ -129,8 +127,8 @@ openssl req -new -batch \
     -out ca/ca.csr \
     -passin env:CA_PASS
 
-echo
-echo -e "$NOTE Creating the root CA certificate"
+echo >&2
+echo -e "$NOTE Creating the root CA certificate" >&2
 
 openssl_engine_cmd="\
     -engine pkcs11 \
@@ -155,7 +153,7 @@ if [[ -n "$CA_ENABLE_ENGINE" ]]; then
 fi
 
 echo
-echo -e "$NOTE Creating the root CA CRL"
+echo -e "$NOTE Creating the root CA CRL" >&2
 
 openssl ca -gencrl -batch \
            ${CA_ENABLE_ENGINE:+$openssl_engine_cmd} \
@@ -165,10 +163,10 @@ openssl ca -gencrl -batch \
 
 echo
 if [ $SYMLINK -eq 1 ]; then
-    echo -e "$NOTE Symlinking toolchain (dev mode)"
+    echo -e "$NOTE Symlinking toolchain (dev mode)" >&2
     CP_CMD='ln -s'
 else
-    echo -e "$NOTE Copying toolchain"
+    echo -e "$NOTE Copying toolchain" >&2
     CP_CMD='cp'
 fi
 $CP_CMD "${BIN_DIR}/README.md" README.md
@@ -187,4 +185,4 @@ unset CA_PASS
 
 trap 0
 
-echo -e "$SUCC Root CA initialized."
+echo -e "$SUCC Root CA initialized." >&2

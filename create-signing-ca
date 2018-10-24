@@ -54,20 +54,19 @@ CA_NAME="$( basename "${CA_DIR}" )"
 CA_PATH="$( fullpath "${CA_DIR}")"
 export CA_PATH
 
-echo
-echo -e "$NOTE Creating new signing sub-CA in '${CA_DIR}'"
-echo
+echo >&2
+echo -e "$NOTE Creating new signing sub-CA in '${CA_DIR}'" >&2
+echo >&2
 
 init_ca_home "${CA_DIR}"
 trap 'rm -Rf "${CA_DIR}"' 0
 
 # early verification of root ca password
 if [ -n "$CA_ENABLE_ENGINE" ]; then
-    echo -e "$NOTE Your CA key is on PKCS11 device, enter PIN."
+    echo -e "$NOTE Your CA key is on PKCS11 device, enter PIN." >&2
 fi
-echo -e -n "$INPUT Enter passphase for root CA key: "
-read -r -s PARENT_PASS
-echo
+PARENT_PASS=`ask -s "$INPUT Enter passphrase for root CA key: " CA_ROOT_PASS_DEFAULT "${ROOT_PASS:-""}"`
+echo >&2
 export CA_PARENT_PASS="${PARENT_PASS}"
 openssl_engine_cmd='
     -engine pkcs11 
@@ -85,8 +84,7 @@ generate_conf "${CA_DIR}/bin/defaults.conf"
 source "${CA_DIR}/bin/defaults.conf"
 
 CA_CERT_CN="${CA_CERT_O} Certificate ${CA_NAME}"
-echo -e -n "$INPUT Common Name for CA certificate [${CA_CERT_CN}]: "
-read -r CERT_CN
+CERT_CN=`ask "$INPUT Common Name for CA certificate [${CA_CERT_CN}]: " CA_SUB_CN_DEFAULT "${CA_CERT_CN}"`
 if [ -n "${CERT_CN}" ]; then
     CA_CERT_CN="${CERT_CN}"
 fi
@@ -94,11 +92,11 @@ fi
 if [[ -n $CA_ENABLE_ENGINE ]]; then
     LOOP=1
     while [[ -n $CA_PARENT_ENABLE_ENGINE ]] && [[ -n $LOOP ]]; do
-        echo -e "$ERR WARNING: please make sure you have the proper pkcs11 device inserted. Do not have your root CA inserted."
-        echo -e -n "$INPUT Are you SURE you wish to continue? [y/N]: "
+        echo -e "$ERR WARNING: please make sure you have the proper pkcs11 device inserted. Do not have your root CA inserted." >&2
+        echo -e -n "$INPUT Are you SURE you wish to continue? [y/N]: " >&2
         read -r SURE
         if [ "${SURE}" != "y" ] && [ "${SURE}" != "Y" ]; then
-            echo -e "$ERR Exiting."
+            echo -e "$ERR Exiting." >&2
             exit 1
         fi
         CA_MODULUS=$(openssl rsa \
@@ -112,27 +110,24 @@ if [[ -n $CA_ENABLE_ENGINE ]]; then
     done
     init_engine
     init_slot 9c "${CA_DIR}/ca/ca.pub"
-    echo -e -n "$INPUT Enter PIN for signing sub-CA key: "
+    echo -e -n "$INPUT Enter PIN for signing sub-CA key: " >&2
     read -r -s PASS1
-    echo
+    echo >&2
     if [[ ${#PASS1} -lt 4 ]]; then
-        echo -e "$ERR Passphrase is too short, please use at least 4 characters!"
+        echo -e "$ERR Passphrase is too short, please use at least 4 characters!" >&2
         exit 1
     fi
 else
-    echo
-    echo -e -n "$INPUT Enter passphase for encrypting signing sub-CA key: "
-    read -r -s PASS1
-    echo
+    PASS1=`ask -s "$INPUT Enter passphrase for encrypting signing sub-CA key: " CA_SUB_PASS_DEFAULT "${SUB_PASS:-""}"`
+    echo >&2
     if [[ ${#PASS1} -lt 4 ]]; then
-        echo -e "$ERR Passphrase is too short, please use at least 4 characters!"
+        echo -e "$ERR Passphrase is too short, please use at least 4 characters!" >&2
         exit 1
     fi
-    echo -e -n "$INPUT Verifying - Enter passphase for encrypting signing sub-CA key: "
-    read -r -s PASS2
-    echo
+    PASS2=`ask -s "$INPUT Verifying - Enter passphrase for encrypting signing sub-CA key: " CA_SUB_PASS_DEFAULT "${SUB_PASS:-""}"`
+    echo >&2
     if [ "${PASS1}" != "${PASS2}" ]; then
-        echo -e "$ERR Passphrases did not match, exiting."
+        echo -e "$ERR Passphrases did not match, exiting." >&2
         exit 1
     fi
 fi
@@ -143,14 +138,12 @@ export SAN=""
 pushd "${CA_DIR}" > /dev/null
 
 # Generate the signing CA openssl config
-echo enter template
 template "${BIN_DIR}/templates/signing.tpl" "ca/ca.conf"
-echo exit template
 # Generate the signing CA openssh config
 mkdir -p ca/ssh
 echo $( od -vAn -N2 -tu2 < /dev/urandom )00 > ca/ssh/serial
 
-echo -e "$NOTE Creating the signing sub-CA key"
+echo -e "$NOTE Creating the signing sub-CA key" >&2
 
 # Create the signing CA key
 if [[ -z $CA_ENABLE_ENGINE ]]; then
@@ -162,7 +155,7 @@ else
 fi
 generate_pubkey_ssh ca/ca.pub ca/ssh/ca.ssh.pub ${CA_DIR}
 
-echo -e "$NOTE Creating the signing sub-CA csr"
+echo -e "$NOTE Creating the signing sub-CA csr" >&2
 
 openssl_engine_cmd="\
     -engine pkcs11 \

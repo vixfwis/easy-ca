@@ -73,7 +73,7 @@ x509_extensions         = server_ext                 # Default cert extensions
 
 [ sign_ca_pol ]
 countryName             = match                 # Must match
-stateOrProvinceName     = match                 # Must match
+stateOrProvinceName     = supplied              # Must be present
 localityName            = supplied              # Must be present
 organizationName        = match                 # Must match
 organizationalUnitName  = supplied              # Must be present

@@ -61,25 +61,24 @@ fi
 # Sanitize the commonName to make it suitable for use in filenames
 SAFE_NAME=$(echo "$SERVER_NAME" | sed 's/\*/star/g' | sed 's/[^A-Za-z0-9-]/-/g')
 
-echo -e "$NOTE Creating new SSL server certificate for:"
-echo -e "$NOTE commonName       $SERVER_NAME"
-echo -e "$NOTE subjectAltName   $ALT_NAME"
+echo -e "$NOTE Creating new SSL server certificate for:" >&2
+echo -e "$NOTE commonName       $SERVER_NAME" >&2
+echo -e "$NOTE subjectAltName   $ALT_NAME" >&2
 
 pushd "$BIN_DIR/.." > /dev/null
 
 if [ -d "certs/server/$SAFE_NAME" ]; then
-    echo -e "$ERR Configuration already exists for '$SERVER_NAME', exiting."
+    echo -e "$ERR Configuration already exists for '$SERVER_NAME', exiting." >&2
     exit 1
 fi
 
 
 echo
 if [ -n "$CA_ENABLE_ENGINE" ]; then
-    echo -e "$NOTE Your CA key is on PKCS11 device, enter PIN."
+    echo -e "$NOTE Your CA key is on PKCS11 device, enter PIN." >&2
 fi
-echo -e -n "$INPUT Enter passphase for signing CA key: "
-read -r -s PASS
-echo
+PASS=`ask -s "$INPUT Enter passphrase for signing CA key: " CA_SIGN_PASS_DEFAULT "${SIGN_PASS:-""}"`
+echo >&2
 export CA_PASS="${PASS}"
 
 openssl_engine_cmd='
@@ -101,9 +100,8 @@ export SAN="${ALT_NAME}"
 ask_server_cert_questions
 template "${BIN_DIR}/templates/server.tpl" "certs/server/$SAFE_NAME/$SAFE_NAME.conf"
 
-echo -e "$NOTE Usually a server key will not be on a pkcs11 device." 
-echo -e -n "$INPUT Create csr on pkcs11 device? (key must be in \"PIV AUTH key\" or 9a): [yN]"
-read -r SURE
+echo -e "$NOTE Usually a server key will not be on a pkcs11 device." >&2
+SURE=`ask "$INPUT Create csr on pkcs11 device? (key must be in \"PIV AUTH key\" or 9a) [y/N]: " CA_USE_PKCS11 "N"`
 if [ "${SURE}" != "y" ] && [ "${SURE}" != "Y" ]; then
     ENABLE_ENGINE=
 else
@@ -111,7 +109,7 @@ else
     init_slot 9a "certs/server/$SAFE_NAME/$SAFE_NAME.pub"
 fi
 
-echo -e "$NOTE Creating the server key and csr"
+echo -e "$NOTE Creating the server key and csr" >&2
 
 # Create the sever key and csr
 openssl_engine_cmd='
@@ -135,10 +133,10 @@ openssl rsa \
             $( [ -z $ENABLE_ENGINE ] && echo "-check -in certs/server/$SAFE_NAME/$SAFE_NAME.key") \
             -noout
 
-echo -e "$NOTE Example known_hosts: @cert-authority *.example.com ca.ssh-cert.pub"
-echo -e "$NOTE Example sshd_config: HostCertificate $SAFE_NAME.ssh-cert.pub"
-echo -e "$NOTE Example sshd_config: TrustedUserCAKeys ca.ssh.pub"
-echo -e "$NOTE Example sshd_config: RevokedKeys revoked-keys"
+echo -e "$NOTE Example known_hosts: @cert-authority *.example.com ca.ssh-cert.pub" >&2
+echo -e "$NOTE Example sshd_config: HostCertificate $SAFE_NAME.ssh-cert.pub" >&2
+echo -e "$NOTE Example sshd_config: TrustedUserCAKeys ca.ssh.pub" >&2
+echo -e "$NOTE Example sshd_config: RevokedKeys revoked-keys" >&2
 
 if [ -z "$ENABLE_ENGINE" ]; then
     chmod 0400 "certs/server/$SAFE_NAME/$SAFE_NAME.key"
@@ -149,7 +147,7 @@ fi
 ssh-keygen -f "certs/server/$SAFE_NAME/$SAFE_NAME.pub" -i -mPKCS8 \
         | awk "{printf \$0;print \" ${SAFE_NAME}\"}" > "certs/server/$SAFE_NAME/ssh/$SAFE_NAME.ssh.pub"
 
-echo -e "$NOTE Creating the server certificate"
+echo -e "$NOTE Creating the server certificate" >&2
 
 # Create the server certificate
 openssl_engine_cmd="\
@@ -168,7 +166,7 @@ if [[ -n "$ENABLE_ENGINE" ]]; then
     replace_crt 9a certs/server/"$SAFE_NAME"/"$SAFE_NAME".crt
 fi
 
-echo -e "$NOTE Verifying certificate/key pair"
+echo -e "$NOTE Verifying certificate/key pair" >&2
 
 openssl_engine_cmd="\
     -engine pkcs11 \

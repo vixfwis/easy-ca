@@ -49,23 +49,22 @@ fi
 
 SAFE_NAME=$(echo "${CLIENT_NAME}" | sed 's/\*/star/g' | sed 's/[^A-Za-z0-9-]/-/g')
 
-echo -e "$NOTE Creating new client certificate for '$CLIENT_NAME'"
+echo -e "$NOTE Creating new client certificate for '$CLIENT_NAME'" >&2
 
 pushd "${BIN_DIR}/.." > /dev/null
 
 if [ -d "certs/clients/$SAFE_NAME" ]; then
-    echo -e "$ERR Configuration already exists for '$CLIENT_NAME' ($SAFE_NAME), exiting."
+    echo -e "$ERR Configuration already exists for '$CLIENT_NAME' ($SAFE_NAME), exiting." >&2
     exit 1
 fi
 
 
 echo
 if [ -n "$CA_ENABLE_ENGINE" ]; then
-    echo -e "$NOTE Your CA key is on PKCS11 device, enter PIN."
+    echo -e "$NOTE Your CA key is on PKCS11 device, enter PIN." >&2
 fi
-echo -e -n "$INPUT Enter passphase for signing CA key: "
-read -r -s PASS
-echo
+PASS=`ask -s "$INPUT Enter passphrase for signing CA key: " CA_SIGN_PASS_DEFAULT "${SIGN_PASS:-""}"`
+echo >&2
 export CA_PASS="${PASS}"
 
 openssl_engine_cmd='
@@ -88,20 +87,19 @@ ask_client_cert_questions
 export SAN="email:$CA_CERT_MAIL"
 template "${BIN_DIR}/templates/clients.tpl" "certs/clients/$SAFE_NAME/$SAFE_NAME.conf"
 
-echo -e -n "$INPUT Create csr on pkcs11 device? (key must be in \"PIV AUTH key\" or 9a): [yN]"
-read -r SURE
+SURE=`ask "$INPUT Create csr on pkcs11 device? (key must be in \"PIV AUTH key\" or 9a) [y/N]: " CA_USE_PKCS11 "N"`
 if [ "${SURE}" != "y" ] && [ "${SURE}" != "Y" ]; then
     ENABLE_ENGINE=
 else
-    echo -e -n "$INPUT Enter PIN for PIV key: "
+    echo -e -n "$INPUT Enter PIN for PIV key: " >&2
     read -r -s PASS
-    echo
+    echo >&2
     export PIV_PASS="${PASS}"
     ENABLE_ENGINE=1
     CA_PASS=$PIV_PASS init_slot 9a "certs/clients/$SAFE_NAME/$SAFE_NAME.pub" "pkcs11:object=PIV%20AUTH%20key"
 fi
 
-echo -e "$NOTE Creating the client key and csr"
+echo -e "$NOTE Creating the client key and csr" >&2
 
 # Create the client key and csr
 openssl_engine_cmd='
@@ -134,17 +132,17 @@ if [ -z "$ENABLE_ENGINE" ]; then
         -pubout -out "certs/clients/$SAFE_NAME/$SAFE_NAME.pub"
 fi
 
-echo -e "$NOTE Creating client SSH ($SAFE_NAME.ssh.pub)"
-echo -e "$NOTE Example sshd_config: TrustedUserCAKeys ca.ssh.pub"
-echo -e "$NOTE Example sshd_config: AuthorizedPrincipalsFile /etc/ssh/auth_principals/%u"
-echo -e "$NOTE Example known_hosts: @cert-authority *.example.com <ca.ssh.pub>"
+echo -e "$NOTE Creating client SSH ($SAFE_NAME.ssh.pub)" >&2
+echo -e "$NOTE Example sshd_config: TrustedUserCAKeys ca.ssh.pub" >&2
+echo -e "$NOTE Example sshd_config: AuthorizedPrincipalsFile /etc/ssh/auth_principals/%u" >&2
+echo -e "$NOTE Example known_hosts: @cert-authority *.example.com <ca.ssh.pub>" >&2
 
 ssh-keygen -f "certs/clients/$SAFE_NAME/$SAFE_NAME.pub" -i -mPKCS8 \
         | awk "{printf \$0;print \" ${SAFE_NAME}\"}" > "certs/clients/$SAFE_NAME/ssh/$SAFE_NAME.ssh.pub"
 ssh-keygen -lvf "certs/clients/$SAFE_NAME/ssh/$SAFE_NAME.ssh.pub"
 
 
-echo -e "$NOTE Creating the client certificate"
+echo -e "$NOTE Creating the client certificate" >&2
 
 # Create the client certificate
 openssl_engine_cmd="\
@@ -163,7 +161,7 @@ if [[ -n "$ENABLE_ENGINE" ]]; then
     replace_crt 9a certs/clients/"$SAFE_NAME"/"$SAFE_NAME".crt
 fi
 
-echo -e "$NOTE Verifying certificate/key pair"
+echo -e "$NOTE Verifying certificate/key pair" >&2
 
 openssl_engine_cmd="\
     -engine pkcs11 \
@@ -185,7 +183,7 @@ if [ ! "$key_mod" = "$cert_mod" ];then
     exit 2
 fi
 
-echo -e "$NOTE Verifying trusted chain"
+echo -e "$NOTE Verifying trusted chain" >&2
 
 openssl verify -CAfile ca/chain.pem "certs/clients/$SAFE_NAME/$SAFE_NAME.crt"
 
