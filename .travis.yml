@@ -28,6 +28,7 @@ script:
   - |
       bash --posix ./bin/create-server -s travis-server.bogus.com -a www.travis-server.bogus.com << EOF
       rootCA_password
+      California
       San Francisco
       Jurisdiction of travis-server.bogus-com
       n
@@ -67,6 +68,7 @@ script:
   - |
       bash --posix ./bin/create-server -s travis-server.bogus.com -a www.travis-server.bogus.com << EOF
       signCA_password
+      California
       San Francisco
       Jurisdiction of travis-server.bogus-com
       n
