@@ -55,11 +55,7 @@ generate_conf "${CA_DIR}/bin/defaults.conf"
 source "${CA_DIR}/bin/defaults.conf"
 
 CA_CERT_CN="${CA_CERT_O} Certificate Authority"
-echo -e -n "$INPUT Common Name for CA certificate [${CA_CERT_CN}]: "
-read -r CERT_CN
-if [ -n "${CERT_CN}" ]; then
-    CA_CERT_CN="${CERT_CN}"
-fi
+CERT_CN=`ask "$INPUT Common Name for CA certificate [${CA_CERT_CN}]: " CA_ROOT_CN_DEFAULT "${CA_CERT_CN}"`
 
 if [[ -n $CA_ENABLE_ENGINE ]]; then
     init_engine
