@@ -20,6 +20,7 @@ import-ca
 functions
 show-status
 gen-html
+update-crl
 make-client
 "
 
@@ -43,6 +44,7 @@ import-ca
 functions
 show-status
 gen-html
+update-crl
 make-client
 "
 

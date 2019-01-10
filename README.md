@@ -30,6 +30,7 @@ A suite of bash scripts for automating very basic OpenSSL Certificate Authority 
 | show-status       | Show the infos about the current CA (signed certificates...)      |
 | sign-csr          | Sign an imported client certificate                               |
 | create-csr        | Create a client certificate                                       |
+| update-crl        | Updates the CRL                                                   |
 
 #### Important files:
 
