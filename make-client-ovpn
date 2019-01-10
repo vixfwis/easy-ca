@@ -30,11 +30,13 @@ done
 
 if [ ! -f ca/ca.crt ]; then
     echo -e "$ERR Must be run inside a CA directory!"
+    usage
     exit 2
 fi
 
 if [ ! -f ${KEY_DIR}/certs/clients/${CLIENT_NAME}/${CLIENT_NAME}.crt ] && [ ! -f ${KEY_DIR}/certs/clients/${CLIENT_NAME}/${CLIENT_NAME}.crt ]; then
     echo -e "$ERR Client crt and key must exist."
+    usage
     exit 2
 fi
 
