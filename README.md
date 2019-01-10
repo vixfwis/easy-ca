@@ -1,7 +1,7 @@
 # easy-ca
 OpenSSL wrapper scripts for managing basic CA functions
 
-[![Test CI Status](https://travis-ci.org/cgzones/easy-ca.svg?branch=develop)](https://travis-ci.org/cgzones/easy-ca)
+[![Test CI Status](https://travis-ci.org/tomberek/easy-ca.svg?branch=master)](https://travis-ci.org/tomberek/easy-ca)
 [![GitHub License](https://img.shields.io/badge/License-MPL%202.0-brightgreen.svg)](https://raw.githubusercontent.com/cgzones/easy-ca/master/LICENSE)
 
 A suite of bash scripts for automating very basic OpenSSL Certificate Authority operations:
