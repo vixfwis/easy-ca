@@ -1,0 +1,56 @@
+#!/bin/bash
+set -eu
+set -o pipefail
+
+umask 0077
+
+BIN_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+source "${BIN_DIR}/functions"
+
+CLIENT_NAME=
+KEY_DIR=.
+BASE_CONFIG=./client.base.ovpn
+
+usage() {
+    echo "Usage: $0 CLIENT_NAME"
+    echo "Creates OpenVPN config for CLIENT_NAME"
+    echo
+    echo "Options:"
+    echo "    -c CLIENT_NAME  Client name (commonName) for the new cert"
+    echo
+}
+
+while getopts c:h FLAG; do
+    case $FLAG in
+        c) CLIENT_NAME=${OPTARG} ;;
+        h) echo -e -n "$SUCC " && usage && exit 0 ;;
+        *) echo -e -n "$ERR " && usage && exit 2 ;;
+    esac
+done
+
+if [ ! -f ca/ca.crt ]; then
+    echo -e "$ERR Must be run inside a CA directory!"
+    exit 2
+fi
+
+if [ ! -f ${KEY_DIR}/certs/clients/${CLIENT_NAME}/${CLIENT_NAME}.crt ] && [ ! -f ${KEY_DIR}/certs/clients/${CLIENT_NAME}/${CLIENT_NAME}.crt ]; then
+    echo -e "$ERR Client crt and key must exist."
+    exit 2
+fi
+
+if [ -z "$CLIENT_NAME" ] ; then 
+    echo -e "$ERR must specify a client name"
+    usage
+    exit 2
+fi
+
+OUTPUT_DIR=${KEY_DIR}/certs/clients/${CLIENT_NAME}
+cat ${BASE_CONFIG} \
+    <(echo -e '<ca>') \
+    ${KEY_DIR}/ca/ca.crt \
+    <(echo -e '</ca>\n<cert>') \
+    ${KEY_DIR}/certs/clients/${CLIENT_NAME}/${CLIENT_NAME}.crt \
+    <(echo -e '</cert>\n<key>') \
+    ${KEY_DIR}/certs/clients/${CLIENT_NAME}/${CLIENT_NAME}.key \
+    <(echo -e '</key>') \
+    > ${OUTPUT_DIR}/${CLIENT_NAME}.ovpn

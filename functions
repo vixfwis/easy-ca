@@ -20,6 +20,7 @@ import-ca
 functions
 show-status
 gen-html
+make-client
 "
 
 export TEMPLATES_ROOT="
@@ -42,6 +43,7 @@ import-ca
 functions
 show-status
 gen-html
+make-client
 "
 
 export TEMPLATES_SIGN="
