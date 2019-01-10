@@ -21,7 +21,7 @@ functions
 show-status
 gen-html
 update-crl
-make-client
+make-client-ovpn
 "
 
 export TEMPLATES_ROOT="
@@ -45,7 +45,7 @@ functions
 show-status
 gen-html
 update-crl
-make-client
+make-client-ovpn
 "
 
 export TEMPLATES_SIGN="
