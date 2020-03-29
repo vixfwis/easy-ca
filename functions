@@ -239,7 +239,7 @@ ask_server_cert_questions() {
     CA_CERT_ST=`ask "$INPUT State for new certificates [${CA_CERT_ST}]: " CA_SERVER_CERT_ST "${CA_CERT_ST}"`
     CA_CERT_L=`ask "$INPUT City for new certificates [${CA_CERT_L}]: " CA_SERVER_CERT_L "${CA_CERT_L}"`
     #CA_CERT_O=`ask "$INPUT Organization for new certificates [${CA_CERT_O}]: " SERVER_CERT_O "${CA_CERT_O}"`
-    CA_CERT_OU=`ask "$INPUT Organization unit for new certificates [${CA_CERT_OU}]: " CA_SERVER_CERT_OU "${CA_CERT_L}"`
+    CA_CERT_OU=`ask "$INPUT Organization unit for new certificates [${CA_CERT_OU}]: " CA_SERVER_CERT_OU "${CA_CERT_OU}"`
 }
 
 ##
@@ -252,7 +252,7 @@ ask_client_cert_questions() {
     #CA_CERT_ST=`ask "$INPUT State for new certificates [${CA_CERT_ST}]: " CLIENT_CERT_ST "${CA_CERT_ST}"`
     CA_CERT_L=`ask "$INPUT City for new certificates [${CA_CERT_L}]: " CA_CLIENT_CERT_L "${CA_CERT_L}"`
     #CA_CERT_O=`ask "$INPUT Organization for new certificates [${CA_CERT_O}]: " CLIENT_CERT_O "${CA_CERT_O}"`
-    CA_CERT_OU=`ask "$INPUT Organization unit for new certificates [${CA_CERT_OU}]: " CA_CLIENT_CERT_OU "${CA_CERT_L}"`
+    CA_CERT_OU=`ask "$INPUT Organization unit for new certificates [${CA_CERT_OU}]: " CA_CLIENT_CERT_OU "${CA_CERT_OU}"`
     CA_CERT_MAIL=`ask "$INPUT Email Address (name@fqdn) for new certificates [${CA_CERT_MAIL}]: " CA_CLIENT_CERT_MAIL "${CA_CERT_MAIL}"`
     if [ -z "${CA_CERT_MAIL}" ]; then
         echo -e "$ERR No email address supplied, exiting." >&2
