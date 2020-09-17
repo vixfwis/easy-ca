@@ -269,19 +269,31 @@ function generate_key(){
 function extract_pubkey(){
     local CRTPATH=$1
     local PUBPATH=$2
-    openssl x509 -in $CRTPATH -pubkey -noout -passin env:CA_PASS > $PUBPATH
+    local PASS_ARG="-passin env:CA_PASS"
+    if [ -z "${CA_PASS-}" ]; then
+      PASS_ARG=
+    fi
+    openssl x509 -in $CRTPATH -pubkey -noout $PASS_ARG > $PUBPATH
 }
 function generate_pubkey(){
     local KEYPATH=$1
     local PUBPATH=$2
-    openssl rsa -in $KEYPATH -pubout -out $PUBPATH -passin env:CA_PASS
+    local PASS_ARG="-passin env:CA_PASS"
+    if [ -z "${CA_PASS-}" ]; then
+      PASS_ARG=
+    fi
+    openssl rsa -in $KEYPATH -pubout -out $PUBPATH $PASS_ARG
 }
 function generate_pubkey_pkcs11(){
     local KEYPATH=$1
     local PUBPATH=$2
-    echo -e "$NOTE CA key should already exist via pkcs11 engine." >&2
+    local PASS_ARG="-passin env:CA_PASS"
+    if [ -z "${CA_PASS-}" ]; then
+      PASS_ARG=
+    fi
+    echo -e "$NOTE key should already exist via pkcs11 engine." >&2
     openssl rsa -engine pkcs11 -inform engine \
-                -in $KEYPATH -pubout -out $PUBPATH -passin env:CA_PASS
+                -in $KEYPATH -pubout -out $PUBPATH $PASS_ARG
 }
 
 function generate_pubkey_ssh(){
