@@ -109,7 +109,7 @@ if [[ -n $CA_ENABLE_ENGINE ]]; then
         fi
     done
     init_engine
-    init_slot 9c "${CA_DIR}/ca/ca.pub"
+    init_slot 9c "${CA_DIR}/ca/ca.pub" "pkcs11:object=SIGN%20key"
     echo -e -n "$INPUT Enter PIN for signing sub-CA key: " >&2
     read -r -s PASS1
     echo >&2
