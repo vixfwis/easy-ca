@@ -340,7 +340,6 @@ function extract_crt(){
 function init_engine(){
     echo -e "$NOTE THIS WILL RESET YOUR YUBIKEY USING YKMAN" >&2
     echo -e "$NOTE Run 'ykman piv reset' on your own to set PIN/PUK/management keys properly." >&2
-    echo -e -n "$INPUT Do you wish to reset your device? [y/N]: " >&2
     local SURE=`ask "$INPUT Do you wish to reset your device? [y/N]: " CA_INIT_ENGINE_SURE ""`
     if [ "${SURE}" == "y" ] || [ "${SURE}" == "Y" ]; then
         ykman piv reset
