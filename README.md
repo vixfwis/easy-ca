@@ -22,6 +22,7 @@ A suite of bash scripts for automating very basic OpenSSL Certificate Authority 
 | Name              | Description                                                       |
 | ----------------- | ----------------------------------------------------------------- |
 | create-client     | Create a client certificate                                       |
+| create-codesign   | Create a code signing certificate                                       |
 | create-root-ca    | Create a root signing CA                                          |
 | create-server     | Create a server certificate                                       |
 | create-signing-ca | Create an intermediate signing CA inside a root CA                |
@@ -34,12 +35,12 @@ A suite of bash scripts for automating very basic OpenSSL Certificate Authority 
 
 #### Important files:
 
-| Path                    | Description                              |
-| ----------------------- | ---------------------------------------- |
-| bin/                    | Script directory                         |
-| ca/ca.crt               | CA certificate                           |
-| ca/chain.pem            | CA chain certificate                     |
-| certs/(client\|server)/ | Parent directory for signed certificates |
+| Path                              | Description                              |
+| --------------------------------- | ---------------------------------------- |
+| bin/                              | Script directory                         |
+| ca/ca.crt                         | CA certificate                           |
+| ca/chain.pem                      | CA chain certificate                     |
+| certs/(client\|server\|codesign)/ | Parent directory for signed certificates |
 
 ### Create a new Root CA
 
@@ -107,14 +108,33 @@ Running **create-client** from within any CA installation will issue a new clien
 $CA_DIR/bin/create-client -c user@domain.com
 ```
 
-**create-client** will prompt for basic DN configuration, using the CA configuration as defaults. After the script is completed, the client certificate, key, and CSR are available for review in the directory *$CA_DIR/certs/clients/user-domain-com/*:
+**create-client** will prompt for basic DN configuration, using the CA configuration as defaults. After the script is completed, the client certificate, key, CSR and p12 files are available for review in the directory *$CA_DIR/certs/clients/user-domain-com/*:
 
 ```
 $CA_DIR/certs/clients/user-domain-com/user-domain-com.crt
 $CA_DIR/certs/clients/user-domain-com/user-domain-com.key
+$CA_DIR/certs/clients/user-domain-com/user-domain-com.p12
 $CA_DIR/certs/clients/user-domain-com/user-domain-com.pub
 $CA_DIR/certs/clients/user-domain-com/user-domain-com.ssh.pub
 $CA_DIR/certs/clients/user-domain-com/user-domain-com.csr
+```
+
+### Issue a Code Signing Certificate
+
+Running **create-codesign** from within any CA installation will issue a new code signing certificate:
+
+```
+$CA_DIR/bin/create-codesign -c name
+```
+
+**create-cocesign** will prompt for basic DN configuration, using the CA configuration as defaults. After the script is completed, the code signing certificate, key, CSR and p12 files are available for review in the directory *$CA_DIR/certs/codesign/name/*:
+
+```
+$CA_DIR/certs/codesign/name/name.crt
+$CA_DIR/certs/codesign/name/name.key
+$CA_DIR/certs/codesign/name/name.p12
+$CA_DIR/certs/codesign/name/name.pub
+$CA_DIR/certs/codesign/name/name.csr
 ```
 
 ### Revoke a Certificate
