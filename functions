@@ -13,6 +13,7 @@ create-signing-ca
 create-server
 create-client
 create-csr
+create-codesign
 sign-csr
 sign-ssh
 revoke-cert
@@ -28,6 +29,7 @@ export TEMPLATES_ROOT="
 clients.tpl
 server.tpl
 signing.tpl
+codesign.tpl
 root_index.tpl
 sign_index.tpl
 "
@@ -37,6 +39,7 @@ create-signing-ca
 create-server
 create-client
 create-csr
+create-codesign
 sign-csr
 sign-ssh
 revoke-cert
@@ -53,6 +56,7 @@ clients.tpl
 server.tpl
 sign_index.tpl
 signing.tpl
+codesign.tpl
 "
 
 # Output highlighting
@@ -119,6 +123,7 @@ init_ca_home() {
     mkdir certs
     mkdir certs/clients
     mkdir certs/server
+    mkdir certs/codesign
 
     # Create empty databases
     touch ca/db/certificate.db
