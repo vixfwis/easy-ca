@@ -187,6 +187,14 @@ echo -e "$NOTE Verifying trusted chain" >&2
 
 openssl verify -CAfile ca/chain.pem "certs/clients/$SAFE_NAME/$SAFE_NAME.crt"
 
+echo -e "$NOTE Exporting to a p12 file" >&2
+
+openssl pkcs12 -export \
+    -in certs/clients/$SAFE_NAME/$SAFE_NAME.crt \
+    -inkey certs/clients/$SAFE_NAME/$SAFE_NAME.key \
+    -certfile ca/ca.crt \
+    -out certs/clients/$SAFE_NAME/$SAFE_NAME.p12
+
 popd > /dev/null
 
 unset CA_PASS
