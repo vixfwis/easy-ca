@@ -59,7 +59,6 @@ CA_CERT_CN=`ask "$INPUT Common Name for CA certificate [${CA_CERT_CN}]: " CA_ROO
 
 if [[ -n $CA_ENABLE_ENGINE ]]; then
     init_engine
-    init_slot 9c "${CA_DIR}/ca/ca.pub"
     # Slot 9c requires PIN entry on every operation.
     # No need to ask for the PIN for re-use.
     echo -e -n "$INPUT Enter PIN for signing root CA key: " >&2
@@ -69,6 +68,7 @@ if [[ -n $CA_ENABLE_ENGINE ]]; then
         echo -e "$ERR Passphrase is too short, please use at least 4 characters!" >&2
         exit 1
     fi
+    CA_PASS="$PASS1" init_slot 9c "${CA_DIR}/ca/ca.pub" "pkcs11:object=SIGN%20key"
 else
     echo >&2
     PASS1=`ask -s "$INPUT Enter passphrase for encrypting root CA key: " CA_ROOT_PASS_DEFAULT "${ROOT_PASS:-""}"`
