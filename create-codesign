@@ -18,11 +18,11 @@ source "${BIN_DIR}/functions"
 source "${BIN_DIR}/defaults.conf"
 
 usage() {
-    echo "Usage: $0 -c CLIENT_NAME"
-    echo "Issues a client certificate for CLIENT_NAME"
+    echo "Usage: $0 -c CERT_NAME"
+    echo "Issues a code signing certificate named CERT_NAME"
     echo
     echo "Options:"
-    echo "    -c CLIENT_NAME  Client name (commonName) for the new cert"
+    echo "    -c CERT_NAME  Certificate name (commonName) for the new cert"
     echo
 }
 
@@ -31,11 +31,11 @@ if [ ! -f ca/ca.crt ]; then
     exit 2
 fi
 
-CLIENT_NAME=
+CERT_NAME=
 
 while getopts c:h FLAG; do
     case $FLAG in
-        c) CLIENT_NAME=${OPTARG} ;;
+        c) CERT_NAME=${OPTARG} ;;
         h) echo -e -n "$SUCC " && usage && exit 0 ;;
         *) echo -e -n "$ERR " && usage && exit 2 ;;
     esac
@@ -43,18 +43,18 @@ done
 
 if [ $OPTIND -le $# ]; then
     echo -e -n "$ERR " && usage && exit 2
-elif [ "${CLIENT_NAME}" = "" ]; then
+elif [ "${CERT_NAME}" = "" ]; then
     echo -e -n "$ERR " && usage && exit 1
 fi
 
-SAFE_NAME=$(echo "${CLIENT_NAME}" | sed 's/\*/star/g' | sed 's/[^A-Za-z0-9-]/-/g')
+SAFE_NAME=$(echo "${CERT_NAME}" | sed 's/\*/star/g' | sed 's/[^A-Za-z0-9-]/-/g')
 
-echo -e "$NOTE Creating new client certificate for '$CLIENT_NAME'" >&2
+echo -e "$NOTE Creating new code signing certificate named '$CERT_NAME'" >&2
 
 pushd "${BIN_DIR}/.." > /dev/null
 
-if [ -d "certs/clients/$SAFE_NAME" ]; then
-    echo -e "$ERR Configuration already exists for '$CLIENT_NAME' ($SAFE_NAME), exiting." >&2
+if [ -d "certs/codesign/$SAFE_NAME" ]; then
+    echo -e "$ERR Configuration already exists for '$CERT_NAME' ($SAFE_NAME), exiting." >&2
     exit 1
 fi
 
@@ -77,15 +77,15 @@ openssl rsa \
             -noout \
             -passin env:CA_PASS
 
-trap 'rm -Rf "certs/clients/$SAFE_NAME"' 0
-mkdir -p "certs/clients/$SAFE_NAME/ssh"
+trap 'rm -Rf "certs/codesign/$SAFE_NAME"' 0
+mkdir -p "certs/codesign/$SAFE_NAME"
 
-# Generate the client cert openssl config
-export CA_USERNAME="${CLIENT_NAME}"
+# Generate the code signing cert openssl config
+export CA_USERNAME="${CERT_NAME}"
 export CA_CERT_MAIL=""
 ask_client_cert_questions
 export SAN="email:$CA_CERT_MAIL"
-template "${BIN_DIR}/templates/clients.tpl" "certs/clients/$SAFE_NAME/$SAFE_NAME.conf"
+template "${BIN_DIR}/templates/codesign.tpl" "certs/codesign/$SAFE_NAME/$SAFE_NAME.conf"
 
 SURE=`ask "$INPUT Create csr on pkcs11 device? (key must be in \"PIV AUTH key\" or 9a) [y/N]: " CA_USE_PKCS11 "N"`
 if [ "${SURE}" != "y" ] && [ "${SURE}" != "Y" ]; then
@@ -96,12 +96,12 @@ else
     echo >&2
     export PIV_PASS="${PASS}"
     ENABLE_ENGINE=1
-    CA_PASS=$PIV_PASS init_slot 9a "certs/clients/$SAFE_NAME/$SAFE_NAME.pub" "pkcs11:object=PIV%20AUTH%20key"
+    CA_PASS=$PIV_PASS init_slot 9a "certs/codesign/$SAFE_NAME/$SAFE_NAME.pub" "pkcs11:object=PIV%20AUTH%20key"
 fi
 
-echo -e "$NOTE Creating the client key and csr" >&2
+echo -e "$NOTE Creating the code signing key and csr" >&2
 
-# Create the client key and csr
+# Create the code signing key and csr
 openssl_engine_cmd='
     -engine pkcs11 
     -keyform engine
@@ -109,11 +109,11 @@ openssl_engine_cmd='
     -passin env:PIV_PASS'
 openssl req -new -batch \
             ${ENABLE_ENGINE:+$openssl_engine_cmd} \
-            -config "certs/clients/$SAFE_NAME/$SAFE_NAME.conf" \
-            -out "certs/clients/$SAFE_NAME/$SAFE_NAME.csr" \
+            -config "certs/codesign/$SAFE_NAME/$SAFE_NAME.conf" \
+            -out "certs/codesign/$SAFE_NAME/$SAFE_NAME.csr" \
             $( [ -z $ENABLE_ENGINE ] && echo "
             -nodes
-            -keyout certs/clients/$SAFE_NAME/$SAFE_NAME.key")
+            -keyout certs/codesign/$SAFE_NAME/$SAFE_NAME.key")
 
 openssl_engine_cmd='
     -engine pkcs11 
@@ -122,29 +122,18 @@ openssl_engine_cmd='
     -passin env:PIV_PASS'
 openssl rsa \
             ${ENABLE_ENGINE:+$openssl_engine_cmd} \
-            $( [ -z $ENABLE_ENGINE ] && echo "-check -in certs/clients/$SAFE_NAME/$SAFE_NAME.key") \
+            $( [ -z $ENABLE_ENGINE ] && echo "-check -in certs/codesign/$SAFE_NAME/$SAFE_NAME.key") \
             -noout
 
 if [ -z "$ENABLE_ENGINE" ]; then
-    chmod 0400 "certs/clients/$SAFE_NAME/$SAFE_NAME.key"
-    ln -s ../"$SAFE_NAME".key "certs/clients/$SAFE_NAME/ssh/$SAFE_NAME.ssh"
-    openssl rsa -in "certs/clients/$SAFE_NAME/$SAFE_NAME.key" \
-        -pubout -out "certs/clients/$SAFE_NAME/$SAFE_NAME.pub"
+    chmod 0400 "certs/codesign/$SAFE_NAME/$SAFE_NAME.key"
+    openssl rsa -in "certs/codesign/$SAFE_NAME/$SAFE_NAME.key" \
+        -pubout -out "certs/codesign/$SAFE_NAME/$SAFE_NAME.pub"
 fi
 
-echo -e "$NOTE Creating client SSH ($SAFE_NAME.ssh.pub)" >&2
-echo -e "$NOTE Example sshd_config: TrustedUserCAKeys ca.ssh.pub" >&2
-echo -e "$NOTE Example sshd_config: AuthorizedPrincipalsFile /etc/ssh/auth_principals/%u" >&2
-echo -e "$NOTE Example known_hosts: @cert-authority *.example.com <ca.ssh.pub>" >&2
+echo -e "$NOTE Creating the code signing certificate" >&2
 
-ssh-keygen -f "certs/clients/$SAFE_NAME/$SAFE_NAME.pub" -i -mPKCS8 \
-        | awk "{printf \$0;print \" ${SAFE_NAME}\"}" > "certs/clients/$SAFE_NAME/ssh/$SAFE_NAME.ssh.pub"
-ssh-keygen -lvf "certs/clients/$SAFE_NAME/ssh/$SAFE_NAME.ssh.pub"
-
-
-echo -e "$NOTE Creating the client certificate" >&2
-
-# Create the client certificate
+# Create the code signing certificate
 openssl_engine_cmd="\
     -engine pkcs11 \
     -keyform engine \
@@ -152,13 +141,13 @@ openssl_engine_cmd="\
 openssl ca -batch -notext \
            ${CA_ENABLE_ENGINE:+$openssl_engine_cmd} \
            -config ca/ca.conf \
-           -in "certs/clients/$SAFE_NAME/$SAFE_NAME.csr" \
-           -out "certs/clients/$SAFE_NAME/$SAFE_NAME.crt" \
-           -extensions clients_ext \
+           -in "certs/codesign/$SAFE_NAME/$SAFE_NAME.csr" \
+           -out "certs/codesign/$SAFE_NAME/$SAFE_NAME.crt" \
+           -extensions codesign_ext \
            -passin env:CA_PASS
 
 if [[ -n "$ENABLE_ENGINE" ]]; then
-    replace_crt 9a certs/clients/"$SAFE_NAME"/"$SAFE_NAME".crt
+    replace_crt 9a certs/codesign/"$SAFE_NAME"/"$SAFE_NAME".crt
 fi
 
 echo -e "$NOTE Verifying certificate/key pair" >&2
@@ -170,10 +159,10 @@ openssl_engine_cmd="\
     -passin env:PIV_PASS"
 key_mod=$(openssl rsa \
     ${ENABLE_ENGINE:+$openssl_engine_cmd} -noout -modulus \
-    $( [ -z $ENABLE_ENGINE ] && echo "-in certs/clients/$SAFE_NAME/$SAFE_NAME.key")
+    $( [ -z $ENABLE_ENGINE ] && echo "-in certs/codesign/$SAFE_NAME/$SAFE_NAME.key")
 )
 
-cert_mod=$(openssl x509 -noout -modulus -in "certs/clients/$SAFE_NAME/$SAFE_NAME.crt")
+cert_mod=$(openssl x509 -noout -modulus -in "certs/codesign/$SAFE_NAME/$SAFE_NAME.crt")
 
 if [ ! "$key_mod" = "$cert_mod" ];then
     echo -e "$ERR Certificate/Key pair invalid:"
@@ -185,15 +174,15 @@ fi
 
 echo -e "$NOTE Verifying trusted chain" >&2
 
-openssl verify -CAfile ca/chain.pem "certs/clients/$SAFE_NAME/$SAFE_NAME.crt"
+openssl verify -CAfile ca/chain.pem "certs/codesign/$SAFE_NAME/$SAFE_NAME.crt"
 
 echo -e "$NOTE Exporting to a p12 file" >&2
 
 openssl pkcs12 -export \
-    -in certs/clients/$SAFE_NAME/$SAFE_NAME.crt \
-    -inkey certs/clients/$SAFE_NAME/$SAFE_NAME.key \
+    -in certs/codesign/$SAFE_NAME/$SAFE_NAME.crt \
+    -inkey certs/codesign/$SAFE_NAME/$SAFE_NAME.key \
     -certfile ca/ca.crt \
-    -out certs/clients/$SAFE_NAME/$SAFE_NAME.p12
+    -out certs/codesign/$SAFE_NAME/$SAFE_NAME.p12
 
 popd > /dev/null
 
@@ -201,4 +190,4 @@ unset CA_PASS
 
 trap 0
 
-echo -e "$SUCC Client certificate for '${CLIENT_NAME}' created."
+echo -e "$SUCC Code Signing certificate named '${CERT_NAME}' created."
