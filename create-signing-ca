@@ -109,30 +109,11 @@ if [[ -n $CA_ENABLE_ENGINE ]]; then
         fi
     done
     init_engine
+    export CA_PASS="$(ask_pass_once "Enter PIN for signing sub-CA key:" CA_SUB_PASS_DEFAULT "${SUB_PASS:-""}")"
     init_slot 9c "${CA_DIR}/ca/ca.pub" "pkcs11:object=SIGN%20key"
-    echo -e -n "$INPUT Enter PIN for signing sub-CA key: " >&2
-    read -r -s PASS1
-    echo >&2
-    if [[ ${#PASS1} -lt 4 ]]; then
-        echo -e "$ERR Passphrase is too short, please use at least 4 characters!" >&2
-        exit 1
-    fi
 else
-    PASS1=`ask -s "$INPUT Enter passphrase for encrypting signing sub-CA key: " CA_SUB_PASS_DEFAULT "${SUB_PASS:-""}"`
-    echo >&2
-    if [[ ${#PASS1} -lt 4 ]]; then
-        echo -e "$ERR Passphrase is too short, please use at least 4 characters!" >&2
-        exit 1
-    fi
-    PASS2=`ask -s "$INPUT Verifying - Enter passphrase for encrypting signing sub-CA key: " CA_SUB_PASS_DEFAULT "${SUB_PASS:-""}"`
-    echo >&2
-    if [ "${PASS1}" != "${PASS2}" ]; then
-        echo -e "$ERR Passphrases did not match, exiting." >&2
-        exit 1
-    fi
+    export CA_PASS="$(ask_pass_twice_verify "Enter passphrase for encrypting signing sub-CA key:" CA_SUB_PASS_DEFAULT "${SUB_PASS:-""}")"
 fi
-
-export CA_PASS"=${PASS1}"
 
 pushd "${CA_DIR}" > /dev/null
 

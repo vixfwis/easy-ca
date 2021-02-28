@@ -91,10 +91,7 @@ SURE=`ask "$INPUT Create csr on pkcs11 device? (key must be in \"PIV AUTH key\" 
 if [ "${SURE}" != "y" ] && [ "${SURE}" != "Y" ]; then
     ENABLE_ENGINE=
 else
-    echo -e -n "$INPUT Enter PIN for PIV key: " >&2
-    read -r -s PASS
-    echo >&2
-    export PIV_PASS="${PASS}"
+    export PIV_PASS=$(ask_pass_once "Enter PIN for PIV key:" "" "${USER_PASS:-""}")
     ENABLE_ENGINE=1
     CA_PASS=$PIV_PASS init_slot 9a "certs/codesign/$SAFE_NAME/$SAFE_NAME.pub" "pkcs11:object=PIV%20AUTH%20key"
 fi

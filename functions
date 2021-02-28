@@ -268,6 +268,68 @@ ask_client_cert_questions() {
     fi
 }
 
+##
+## ask_pass_twice_verify
+##
+## Ask for a pass twice for verification, and validate length to be at least 4
+##
+function ask_pass_twice_verify(){
+    local question="$1"
+    local variable="$2"
+    local default="${3-}"
+    local pass1=
+    local pass2=
+    while true; do
+        pass1=`ask -s "$INPUT $question " "$variable" "$default"`
+        echo >&2
+        # Do a quick exit if we are to use the variable value
+        if [ -n "${!variable+x}" ] ; then
+            # ask would have already informed the user
+            echo "${pass1}"
+            return
+        fi
+        if [[ ${#pass1} -lt 4 ]]; then
+            echo -e "$ERR Passphrase is too short, please use at least 4 characters!" >&2
+            continue
+        fi
+        pass2=`ask -s "$INPUT Verifying - $question " "$variable" "$default"`
+        echo >&2
+        if [ "$pass1" == "$pass2" ]; then
+            echo "$pass1"
+            return 0
+        fi
+        echo -e "$ERR Passwords did not match" >&2
+    done
+}
+
+##
+## ask_pass_once
+##
+## Ask for a pass once, and validate length to be at least 4
+##
+function ask_pass_once(){
+    local question="$1"
+    local variable="$2"
+    local default="${3-}"
+    local pass=
+    while true; do
+        pass=`ask -s "$INPUT $question " "$variable" "$default"`
+        # Do a quick exit if we are to use the variable value
+        if [ -n "${!variable+x}" ] ; then
+            # ask would have already informed the user
+            echo "${pass}"
+            return
+        fi
+        echo >&2
+        if [[ ${#pass} -lt 4 ]]; then
+            echo -e "$ERR Passphrase is too short, please use at least 4 characters!" >&2
+            continue
+        fi
+        echo "$pass"
+        return 0
+    done
+}
+
 function generate_key(){
     local KEYPATH=$1
     echo -e "$NOTE Creating the key (${CA_KEY_ALG} with ${CA_KEY_LENGTH_ROOTCA} bits)" >&2
