@@ -99,6 +99,9 @@ else
     CA_PASS=$PIV_PASS init_slot 9a "certs/codesign/$SAFE_NAME/$SAFE_NAME.pub" "pkcs11:object=PIV%20AUTH%20key"
 fi
 
+P12_PASSWORD=`ask -s "$INPUT Enter P12 export password (empty to not export): " CA_P12_PASSWORD ""`
+echo >&2
+
 echo -e "$NOTE Creating the code signing key and csr" >&2
 
 # Create the code signing key and csr
@@ -178,7 +181,9 @@ openssl verify -CAfile ca/chain.pem "certs/codesign/$SAFE_NAME/$SAFE_NAME.crt"
 
 echo -e "$NOTE Exporting to a p12 file" >&2
 
+export P12_PASSWORD
 openssl pkcs12 -export \
+    -password env:P12_PASSWORD \
     -in certs/codesign/$SAFE_NAME/$SAFE_NAME.crt \
     -inkey certs/codesign/$SAFE_NAME/$SAFE_NAME.key \
     -certfile ca/ca.crt \

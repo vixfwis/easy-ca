@@ -220,15 +220,15 @@ ask(){
     local question="$1"
     local variable="$2"
     local default="$3"
-    if [ ! -z "${!variable+x}" ] ; then
+    if [ -n "$variable" ] && [ -n "${!variable+x}" ] ; then
         echo -e "$NOTE Using $variable from environment: ${!variable}" >&2
         echo "${!variable}"
         return
     fi
     echo -e -n "$question" >&2
     read -r $readopts REPLY
-    if [ -z "${REPLY:-}" ]; then
-        echo -e "$NOTE Using default $variable : $default" >&2
+    if [ -n "${default}" ] && [ -z "${REPLY:-}" ]; then
+        echo -e "$NOTE Using default: $default" >&2
         echo "$default"
     else
         echo "$REPLY"

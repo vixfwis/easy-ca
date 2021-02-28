@@ -40,6 +40,7 @@ script:
       private
       travis-client@bogus.com
       n
+
       EOF
   - |
       bash --posix ./bin/revoke-cert -c certs/server/travis-server-bogus-com/travis-server-bogus-com.crt << EOF
@@ -80,6 +81,7 @@ script:
       private
       travis-client@bogus.com
       n
+
       EOF
   - |
       bash --posix ./bin/revoke-cert -c certs/server/travis-server-bogus-com/travis-server-bogus-com.crt << EOF
