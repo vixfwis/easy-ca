@@ -89,8 +89,6 @@ elif [ -z "$CERT_PATH" ]; then
     exit 1
 fi
 
-export SAN=""
-
 CA_PATH="${CA_PATH:-$( fullpath "${CA_DIR}")}"
 CERT_FULL_PATH="$( fullpath "${CERT_PATH}")"
 KEY_FULL_PATH="$( fullpath "${KEY_PATH}")"

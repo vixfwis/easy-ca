@@ -140,7 +140,6 @@ echo -e -n "$INPUT Enter passphase for signing CA key: "
 read -r -s PASS
 echo
 export CA_PASS="${PASS}"
-export SAN=""
 
 echo -e "$NOTE Revoke the certificate"
 

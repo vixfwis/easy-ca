@@ -86,7 +86,6 @@ else
 fi
 
 export CA_PASS="${PASS1}"
-export SAN=""
 
 CA_PATH="${CA_PATH:-$( fullpath "${CA_DIR}")}"
 export CA_PATH

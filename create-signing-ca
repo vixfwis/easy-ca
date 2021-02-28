@@ -133,7 +133,6 @@ else
 fi
 
 export CA_PASS"=${PASS1}"
-export SAN=""
 
 pushd "${CA_DIR}" > /dev/null
 
