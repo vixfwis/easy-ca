@@ -120,6 +120,10 @@ subjectAltName          = $ENV::SAN
 [ codesign_ext ]
 keyUsage                = digitalSignature
 extendedKeyUsage        = codeSigning
+subjectKeyIdentifier    = hash
+authorityKeyIdentifier  = keyid:always
+authorityInfoAccess     = @issuer_info
+crlDistributionPoints   = @crl_info
 
 [ crl_ext ]
 authorityKeyIdentifier  = keyid:always
