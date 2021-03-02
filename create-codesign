@@ -84,7 +84,6 @@ mkdir -p "certs/codesign/$SAFE_NAME"
 export CA_USERNAME="${CERT_NAME}"
 export CA_CERT_MAIL=""
 ask_client_cert_questions
-export SAN="email:$CA_CERT_MAIL"
 template "${BIN_DIR}/templates/codesign.tpl" "certs/codesign/$SAFE_NAME/$SAFE_NAME.conf"
 
 SURE=`ask "$INPUT Create csr on pkcs11 device? (key must be in \"PIV AUTH key\" or 9a) [y/N]: " CA_USE_PKCS11 "N"`
