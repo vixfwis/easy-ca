@@ -98,7 +98,7 @@ template() {
 ## Initializes a CA directory skeleton at PATH
 ##
 init_ca_home() {
-    CA_HOME="$1"
+    local CA_HOME="$1"
 
     # Ensure we're initializing an empty directory
     if [ -d "${CA_HOME}" ]; then

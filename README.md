@@ -1,6 +1,8 @@
 # easy-ca
 OpenSSL wrapper scripts for managing basic CA functions
 
+Forked from tomberek/easy-ca, with some changes
+
 [![Test CI Status](https://travis-ci.org/tomberek/easy-ca.svg?branch=master)](https://travis-ci.org/tomberek/easy-ca)
 [![GitHub License](https://img.shields.io/badge/License-MPL%202.0-brightgreen.svg)](https://raw.githubusercontent.com/cgzones/easy-ca/master/LICENSE)
 
@@ -157,8 +159,6 @@ $CA_DIR/ca/ca.crl
 These scripts are very simple, and make some hard-coded assumptions about behavior and configuration:
 * Root and Intermediate CAs have a 3652-day lifetime (configurable in *templates/(root|signing).tpl*)
 * Root and Intermediate CAs have 4096-bit RSA keys (configurable in *defaults.conf*)
-* Root and Intermediate CA keys are always encrypted
-* Only one level of Intermediate CA is supported
 * Client and Server certificates have a 730-day lifetime (configurable in *templates/(server|client).tpl*)
 * Client and Server certificates have 3072-bit RSA keys (configurable in *defaults.conf*)
 * Client and Server keys are not encrypted

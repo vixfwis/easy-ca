@@ -58,7 +58,7 @@ crl_extensions          = crl_ext                    # CRL extensions
 crlnumber               = $dir/ca/db/crl.srl         # CRL number file
 database                = $dir/ca/db/certificate.db  # Index file
 default_crl_days        = 30                         # How long before next CRL
-default_days            = 730                        # How long to certify for
+default_days            = 1825                       # How long to certify for
 default_md              = sha256                     # MD to use
 email_in_dn             = no                         # Add email to cert DN
 name_opt                = ca_default                 # Subject DN display options
@@ -83,6 +83,14 @@ emailAddress            = optional              # Included if present
 [ signing_ca_ext ]
 keyUsage                = critical,keyCertSign,cRLSign
 basicConstraints        = critical,CA:true,pathlen:0
+subjectKeyIdentifier    = hash
+authorityKeyIdentifier  = keyid:always
+authorityInfoAccess     = @issuer_info
+crlDistributionPoints   = @crl_info
+
+[ signing_ca_s_ext ]
+keyUsage                = critical,keyCertSign,cRLSign
+basicConstraints        = critical,CA:true
 subjectKeyIdentifier    = hash
 authorityKeyIdentifier  = keyid:always
 authorityInfoAccess     = @issuer_info

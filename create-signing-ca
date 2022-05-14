@@ -15,30 +15,35 @@ BIN_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "${BIN_DIR}/functions"
 source "${BIN_DIR}/defaults.conf"
 
+CA_PARENT_NAME="$CA_NAME"
+CA_PARENT_PATH="$CA_PATH"
+
 usage() {
     echo "Usage: $0 [-l] -d CA_DIR"
     echo "Initializes a new signing sub-CA in the directory CA_DIR"
-    echo "Must be run inside a root CA dir"
     echo
     echo "Options:"
     echo "    -d CA_DIR  Target directory to be created and initialized"
     echo "               Must not exist yet"
+    echo "    -s         Allow new sub-CA sign intermediate certificates"
     echo "    -l         Symlink toolchain (designed for development)"
     echo
 }
 
-if ! openssl verify -CAfile ca/ca.crt ca/ca.crt >/dev/null 2>&1; then
-    echo -e -n "$ERR " && usage && exit 2
+if openssl x509 -in ca/ca.crt -ext basicConstraints -noout | grep -q "pathlen:0"; then
+    echo -e "$ERR This CA can't sign intermediate certificates" && exit 2
 fi
 
 CA_DIR=
 SYMLINK=0
+SIGNING_CA_EXT="signing_ca_ext"
 
-while getopts d:hl FLAG; do
+while getopts d:hls FLAG; do
     case $FLAG in
         d) CA_DIR=${OPTARG} ;;
         h) echo -e -n "$SUCC " && usage && exit 0;;
         l) SYMLINK=1 ;;
+        s) SIGNING_CA_EXT="signing_ca_s_ext" ;;
         *) echo -e -n "$ERR " && usage && exit 2;;
     esac
 done
@@ -51,7 +56,8 @@ fi
 
 PARENT="${BIN_DIR}/.."
 CA_NAME="$( basename "${CA_DIR}" )"
-CA_PATH="${CA_PATH:-$( fullpath "${CA_DIR}")}"
+export CA_NAME
+CA_PATH="$( fullpath "${CA_DIR}" )"
 export CA_PATH
 
 echo >&2
@@ -65,7 +71,7 @@ trap 'rm -Rf "${CA_DIR}"' 0
 if [ -n "$CA_ENABLE_ENGINE" ]; then
     echo -e "$NOTE Your CA key is on PKCS11 device, enter PIN." >&2
 fi
-PARENT_PASS=`ask -s "$INPUT Enter passphrase for root CA key: " CA_ROOT_PASS_DEFAULT "${ROOT_PASS:-""}"`
+PARENT_PASS=`ask -s "$INPUT Enter passphrase for parent CA key ($CA_PARENT_NAME): " CA_ROOT_PASS_DEFAULT "${ROOT_PASS:-""}"`
 echo >&2
 export CA_PARENT_PASS="${PARENT_PASS}"
 openssl_engine_cmd='
@@ -172,7 +178,7 @@ openssl ca \
    -config ca/ca.conf \
    -in "${CA_DIR}/ca/ca.csr" \
    -out "${CA_DIR}/ca/ca.crt" \
-   -extensions signing_ca_ext \
+   -extensions "$SIGNING_CA_EXT" \
    -passin env:CA_PARENT_PASS
 
 if [[ -n "$CA_ENABLE_ENGINE" ]]; then
@@ -216,7 +222,6 @@ cp "${PARENT}/ca/root.crt" ca/root.crt
 echo -e "$NOTE Verifying trusted chain"
 
 openssl verify -CAfile ca/chain.pem ca/ca.crt
-openssl verify -CAfile ca/root.crt ca/ca.crt
 
 if [ $SYMLINK -eq 1 ]; then
     echo -e "$NOTE Symlinking toolchain (dev mode)"

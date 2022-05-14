@@ -46,6 +46,8 @@ fi
 
 CA_NAME="$( basename "${CA_DIR}" )"
 export CA_NAME
+CA_PATH="$( fullpath "${CA_DIR}" )"
+export CA_PATH
 
 echo -e "$NOTE Creating root CA in dir '${CA_DIR}'"
 
@@ -66,9 +68,6 @@ if [[ -n $CA_ENABLE_ENGINE ]]; then
 else
     export CA_PASS="$(ask_pass_twice_verify "Enter passphrase for encrypting signing root CA key:" CA_ROOT_PASS_DEFAULT "${ROOT_PASS:-""}")"
 fi
-
-CA_PATH="${CA_PATH:-$( fullpath "${CA_DIR}")}"
-export CA_PATH
 
 pushd "${CA_DIR}" > /dev/null
 
