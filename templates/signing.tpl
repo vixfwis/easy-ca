@@ -80,7 +80,14 @@ organizationalUnitName  = supplied              # Must be present
 commonName              = supplied              # Must be present
 emailAddress            = optional              # Included if present
 
-# Extensions for signing certs issued by this signing CA
+[ signing_ca_ext ]
+keyUsage                = critical,keyCertSign,cRLSign
+basicConstraints        = critical,CA:true,pathlen:0
+subjectKeyIdentifier    = hash
+authorityKeyIdentifier  = keyid:always
+authorityInfoAccess     = @issuer_info
+crlDistributionPoints   = @crl_info
+
 [ server_ext ]
 keyUsage                = critical,digitalSignature,keyEncipherment
 basicConstraints        = critical,CA:false
