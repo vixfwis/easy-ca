@@ -337,14 +337,14 @@ function ask_pass_once(){
 function generate_key(){
     local KEYPATH=$1
     echo -e "$NOTE Creating the key (RSA ${CA_KEY_LENGTH_ROOTCA})" >&2
-    openssl genrsa -out $KEYPATH $( [ -z $CA_PASS ] || echo "-aes256") -passout env:CA_PASS "${CA_KEY_LENGTH_ROOTCA}"
+    openssl genrsa -out $KEYPATH $( [ -z $s_CA_PASS ] || echo "-aes256") -passout env:s_CA_PASS "${CA_KEY_LENGTH_ROOTCA}"
     chmod 0400 $KEYPATH
 }
 function extract_pubkey(){
     local CRTPATH=$1
     local PUBPATH=$2
-    local PASS_ARG="-passin env:CA_PASS"
-    if [ -z "${CA_PASS-}" ]; then
+    local PASS_ARG="-passin env:s_CA_PASS"
+    if [ -z "${s_CA_PASS-}" ]; then
       PASS_ARG=
     fi
     openssl x509 -in $CRTPATH -pubkey -noout $PASS_ARG > $PUBPATH
@@ -352,8 +352,8 @@ function extract_pubkey(){
 function generate_pubkey(){
     local KEYPATH=$1
     local PUBPATH=$2
-    local PASS_ARG="-passin env:CA_PASS"
-    if [ -z "${CA_PASS-}" ]; then
+    local PASS_ARG="-passin env:s_CA_PASS"
+    if [ -z "${s_CA_PASS-}" ]; then
       PASS_ARG=
     fi
     openssl rsa -in $KEYPATH -pubout -out $PUBPATH $PASS_ARG
@@ -361,8 +361,8 @@ function generate_pubkey(){
 function generate_pubkey_pkcs11(){
     local KEYPATH=$1
     local PUBPATH=$2
-    local PASS_ARG="-passin env:CA_PASS"
-    if [ -z "${CA_PASS-}" ]; then
+    local PASS_ARG="-passin env:s_CA_PASS"
+    if [ -z "${s_CA_PASS-}" ]; then
       PASS_ARG=
     fi
     echo -e "$NOTE key should already exist via pkcs11 engine." >&2

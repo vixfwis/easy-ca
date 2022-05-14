@@ -86,7 +86,7 @@ if [ -n "$CA_ENABLE_ENGINE" ]; then
 fi
 PASS=`ask -s "$INPUT Enter passphrase for signing CA key: " CA_SIGN_PASS_DEFAULT "${SIGN_PASS:-""}"`
 echo >&2
-export CA_PASS="${PASS}"
+export s_CA_PASS="${PASS}"
 
 openssl_engine_cmd='
     -engine pkcs11
@@ -96,7 +96,7 @@ openssl rsa \
             ${CA_ENABLE_ENGINE:+$openssl_engine_cmd} \
             $( [ -z $CA_ENABLE_ENGINE ] && echo "-check -in ca/private/ca.key") \
             -noout \
-            -passin env:CA_PASS
+            -passin env:s_CA_PASS
 
 trap 'rm -Rf "certs/server/$SAFE_NAME"' 0
 mkdir -p "certs/server/$SAFE_NAME/ssh"
@@ -167,7 +167,7 @@ openssl ca -batch -notext \
            -in "certs/server/$SAFE_NAME/$SAFE_NAME.csr" \
            -out "certs/server/$SAFE_NAME/$SAFE_NAME.crt" \
            -extensions server_ext \
-           -passin env:CA_PASS
+           -passin env:s_CA_PASS
 
 if [[ -n "$ENABLE_ENGINE" ]]; then
     replace_crt 9a certs/server/"$SAFE_NAME"/"$SAFE_NAME".crt
@@ -200,7 +200,7 @@ openssl verify -CAfile ca/chain.pem "certs/server/$SAFE_NAME/$SAFE_NAME.crt"
 
 popd > /dev/null
 
-unset CA_PASS
+unset s_CA_PASS
 
 trap 0
 

@@ -63,10 +63,10 @@ if [[ -n $CA_ENABLE_ENGINE ]]; then
     init_engine
     # Slot 9c requires PIN entry on every operation.
     # No need to ask for the PIN for re-use.
-    export CA_PASS="$(ask_pass_once "Enter PIN for signing root key:" CA_ROOT_PASS_DEFAULT  "${ROOT_PASS:-""}")"
+    export s_CA_PASS="$(ask_pass_once "Enter PIN for signing root key:" CA_ROOT_PASS_DEFAULT  "${ROOT_PASS:-""}")"
     init_slot 9c "${CA_DIR}/ca/ca.pub" "pkcs11:object=SIGN%20key"
 else
-    export CA_PASS="$(ask_pass_twice_verify "Enter passphrase for encrypting signing root CA key:" CA_ROOT_PASS_DEFAULT "${ROOT_PASS:-""}")"
+    export s_CA_PASS="$(ask_pass_twice_verify "Enter passphrase for encrypting signing root CA key:" CA_ROOT_PASS_DEFAULT "${ROOT_PASS:-""}")"
 fi
 
 pushd "${CA_DIR}" > /dev/null
@@ -99,7 +99,7 @@ openssl req -new -batch \
     $( [ -z $CA_ENABLE_ENGINE ] && echo "-key ca/private/ca.key") \
     -config ca/ca.conf \
     -out ca/ca.csr \
-    -passin env:CA_PASS
+    -passin env:s_CA_PASS
 
 echo >&2
 echo -e "$NOTE Creating the root CA certificate" >&2
@@ -116,7 +116,7 @@ openssl ca \
    -in ca/ca.csr \
    -out ca/ca.crt \
    -extensions root_ca_ext \
-   -passin env:CA_PASS
+   -passin env:s_CA_PASS
 
 ln -s ca.crt ca/chain.pem
 ln -s ca.crt ca/root.crt
@@ -133,7 +133,7 @@ openssl ca -gencrl -batch \
            ${CA_ENABLE_ENGINE:+$openssl_engine_cmd} \
            -config ca/ca.conf \
            -out ca/ca.crl \
-           -passin env:CA_PASS
+           -passin env:s_CA_PASS
 
 echo
 if [ $SYMLINK -eq 1 ]; then
@@ -155,7 +155,7 @@ done
 
 popd > /dev/null
 
-unset CA_PASS
+unset s_CA_PASS
 
 trap 0
 

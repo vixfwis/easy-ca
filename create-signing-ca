@@ -73,7 +73,7 @@ if [ -n "$CA_ENABLE_ENGINE" ]; then
 fi
 PARENT_PASS=`ask -s "$INPUT Enter passphrase for parent CA key ($CA_PARENT_NAME): " CA_ROOT_PASS_DEFAULT "${ROOT_PASS:-""}"`
 echo >&2
-export CA_PARENT_PASS="${PARENT_PASS}"
+export s_CA_PARENT_PASS="${PARENT_PASS}"
 openssl_engine_cmd='
     -engine pkcs11 
     -inform engine
@@ -82,7 +82,7 @@ CA_PARENT_MODULUS=$(openssl rsa \
             ${CA_ENABLE_ENGINE:+$openssl_engine_cmd} \
             $( [ -z $CA_ENABLE_ENGINE ] && echo "-check -in ca/private/ca.key") \
             -noout -modulus \
-            -passin env:CA_PARENT_PASS | head -n1)
+            -passin env:s_CA_PARENT_PASS | head -n1)
 
 CA_PARENT_ENABLE_ENGINE=$CA_ENABLE_ENGINE
 
@@ -109,16 +109,16 @@ if [[ -n $CA_ENABLE_ENGINE ]]; then
             ${CA_ENABLE_ENGINE:+$openssl_engine_cmd} \
             $( [ -z $CA_ENABLE_ENGINE ] && echo "-check -in ca/private/ca.key") \
             -noout -modulus \
-            -passin env:CA_PARENT_PASS)
+            -passin env:s_CA_PARENT_PASS)
         if [[ $CA_PARENT_MODULUS != $CA_MODULUS ]] ; then
             LOOP=
         fi
     done
     init_engine
-    export CA_PASS="$(ask_pass_once "Enter PIN for signing sub-CA key:" CA_SUB_PASS_DEFAULT "${SUB_PASS:-""}")"
+    export s_CA_PASS="$(ask_pass_once "Enter PIN for signing sub-CA key:" CA_SUB_PASS_DEFAULT "${SUB_PASS:-""}")"
     init_slot 9c "${CA_DIR}/ca/ca.pub" "pkcs11:object=SIGN%20key"
 else
-    export CA_PASS="$(ask_pass_twice_verify "Enter passphrase for encrypting signing sub-CA key:" CA_SUB_PASS_DEFAULT "${SUB_PASS:-""}")"
+    export s_CA_PASS="$(ask_pass_twice_verify "Enter passphrase for encrypting signing sub-CA key:" CA_SUB_PASS_DEFAULT "${SUB_PASS:-""}")"
 fi
 
 pushd "${CA_DIR}" > /dev/null
@@ -152,7 +152,7 @@ openssl req -new -batch \
     $( [ -z $CA_ENABLE_ENGINE ] && echo "-key ca/private/ca.key") \
     -config ca/ca.conf \
     -out ca/ca.csr \
-    -passin env:CA_PASS
+    -passin env:s_CA_PASS
 
 echo -e "$NOTE Creating the signing sub-CA certificate"
 
@@ -179,7 +179,7 @@ openssl ca \
    -in "${CA_DIR}/ca/ca.csr" \
    -out "${CA_DIR}/ca/ca.crt" \
    -extensions "$SIGNING_CA_EXT" \
-   -passin env:CA_PARENT_PASS
+   -passin env:s_CA_PARENT_PASS
 
 if [[ -n "$CA_ENABLE_ENGINE" ]]; then
     LOOP=1
@@ -195,7 +195,7 @@ if [[ -n "$CA_ENABLE_ENGINE" ]]; then
             ${CA_ENABLE_ENGINE:+$openssl_engine_cmd} \
             $( [ -z $CA_ENABLE_ENGINE ] && echo "-check -in ca/private/ca.key") \
             -noout -modulus \
-            -passin env:CA_PARENT_PASS)
+            -passin env:s_CA_PARENT_PASS)
         if [[ $CA_PARENT_MODULUS != $CA_MODULUS ]] ; then
             LOOP=
         fi
@@ -210,7 +210,7 @@ openssl ca -gencrl -batch \
            ${CA_ENABLE_ENGINE:+$openssl_engine_cmd} \
            -config ca/ca.conf \
            -out ca/ca.crl \
-           -passin env:CA_PASS
+           -passin env:s_CA_PASS
 
 echo -e "$NOTE Creating the chain bundle"
 
@@ -241,8 +241,8 @@ done
 
 popd > /dev/null
 
-unset CA_PASS
-unset CA_PARENT_PASS
+unset s_CA_PASS
+unset s_CA_PARENT_PASS
 
 trap 0
 echo -e "$SUCC Signing sub-CA initialized."

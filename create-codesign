@@ -65,7 +65,7 @@ if [ -n "$CA_ENABLE_ENGINE" ]; then
 fi
 PASS=`ask -s "$INPUT Enter passphrase for signing CA key: " CA_SIGN_PASS_DEFAULT "${SIGN_PASS:-""}"`
 echo >&2
-export CA_PASS="${PASS}"
+export s_CA_PASS="${PASS}"
 
 openssl_engine_cmd='
     -engine pkcs11 
@@ -75,7 +75,7 @@ openssl rsa \
             ${CA_ENABLE_ENGINE:+$openssl_engine_cmd} \
             $( [ -z $CA_ENABLE_ENGINE ] && echo "-check -in ca/private/ca.key") \
             -noout \
-            -passin env:CA_PASS
+            -passin env:s_CA_PASS
 
 trap 'rm -Rf "certs/codesign/$SAFE_NAME"' 0
 mkdir -p "certs/codesign/$SAFE_NAME"
@@ -92,7 +92,7 @@ if [ "${SURE}" != "y" ] && [ "${SURE}" != "Y" ]; then
 else
     export PIV_PASS=$(ask_pass_once "Enter PIN for PIV key:" "" "${USER_PASS:-""}")
     ENABLE_ENGINE=1
-    CA_PASS=$PIV_PASS init_slot 9a "certs/codesign/$SAFE_NAME/$SAFE_NAME.pub" "pkcs11:object=PIV%20AUTH%20key"
+    s_CA_PASS=$PIV_PASS init_slot 9a "certs/codesign/$SAFE_NAME/$SAFE_NAME.pub" "pkcs11:object=PIV%20AUTH%20key"
 fi
 
 P12_PASSWORD=`ask -s "$INPUT Enter P12 export password (empty to not export): " CA_P12_PASSWORD ""`
@@ -143,7 +143,7 @@ openssl ca -batch -notext \
            -in "certs/codesign/$SAFE_NAME/$SAFE_NAME.csr" \
            -out "certs/codesign/$SAFE_NAME/$SAFE_NAME.crt" \
            -extensions codesign_ext \
-           -passin env:CA_PASS
+           -passin env:s_CA_PASS
 
 if [[ -n "$ENABLE_ENGINE" ]]; then
     replace_crt 9a certs/codesign/"$SAFE_NAME"/"$SAFE_NAME".crt
@@ -187,7 +187,7 @@ openssl pkcs12 -export \
 
 popd > /dev/null
 
-unset CA_PASS
+unset s_CA_PASS
 
 trap 0
 

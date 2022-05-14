@@ -108,7 +108,7 @@ if [[ -z "$CSR_KEY" ]]; then
     else
         ENABLE_ENGINE=
         if [ ! -f "certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.key" ]; then
-            CA_PASS=
+            s_CA_PASS=
             openssl genrsa -out "certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.key"
             openssl rsa -in "certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.key" \
                 -pubout -out "certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.pub"
