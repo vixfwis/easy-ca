@@ -6,12 +6,6 @@ aia_url                 = $base_url/$ca.crt        # CA certificate URL
 crl_url                 = $base_url/$ca.crl        # CRL distribution point
 name_opt                = multiline,-esc_msb,utf8  # Display UTF-8 characters
 
-########################################
-#
-# CA certificate request
-# Configuration for `openssl req ...`
-#
-
 [ req ]
 default_bits            = {{CA_KEY_LENGTH_SIGNCA}} # RSA key size
 default_days            = 730                      # How long to certify for
@@ -21,8 +15,6 @@ utf8                    = yes                      # Input is UTF-8
 string_mask             = utf8only                 # Emit UTF-8 strings
 prompt                  = no                       # Don't prompt for DN
 distinguished_name      = req_dn                   # DN section
-# extensions are set by signing CA
-#req_extensions         = req_ext                  # Desired extensions
 
 [ req_dn ]
 countryName             = "{{CA_CERT_C}}"
@@ -31,17 +23,6 @@ localityName            = "{{CA_CERT_L}}"
 organizationName        = "{{CA_CERT_O}}"
 organizationalUnitName  = "{{CA_CERT_OU}}"
 commonName              = "{{CA_CERT_CN}}"
-
-#[ req_ext ]
-#keyUsage                = critical,keyCertSign,cRLSign
-#basicConstraints        = critical,CA:true,pathlen:0
-#subjectKeyIdentifier    = hash
-
-########################################
-#
-# CA operational settings
-# Configuration for `openssl ca ...`
-#
 
 [ ca ]
 default_ca              = sign_ca                    # The default CA section
