@@ -82,7 +82,7 @@ mkdir -p "certs/clients/$SAFE_NAME/ssh"
 
 # Generate the client cert openssl config
 export CA_USERNAME="${CLIENT_NAME}"
-export CA_CERT_MAIL=""
+export CA_CERT_MAIL="${CLIENT_NAME}@${CA_DOMAIN}"
 ask_client_cert_questions
 export SAN="email:$CA_CERT_MAIL"
 template "${BIN_DIR}/templates/clients.tpl" "certs/clients/$SAFE_NAME/$SAFE_NAME.conf"
