@@ -210,6 +210,40 @@ generate_conf_import() {
 }
 
 ##
+## Ask yes/no question
+## Usage: question default_yn
+## default_yn must be 'y' or 'n'
+## Returns 'y' or 'n'
+##
+ask_yes_no(){
+    local question="$1"
+    local default_yn="$2"
+    local out=""
+    if [ "$default_yn" == "y" ]; then
+        out="[Y/n]"
+    else
+        out="[y/N]"
+    fi
+    while true; do
+        echo -e -n "$INPUT $question $out " >&2
+        if [ "$EASY_CA_QUIET" == "y" ] ; then
+            REPLY=""
+        else
+            read REPLY
+        fi
+        if [ "$REPLY" == "" ] ; then
+            REPLY="$default_yn"
+        fi
+        if [ "$REPLY" != "y" ] && [ "$REPLY" != "n" ] ; then
+            echo -e "$ERR Type 'y', 'n' or blank line for default value '$default_yn'" >&2
+            continue
+        fi
+        echo "$REPLY"
+        return
+    done
+}
+
+##
 ## Ask a question if variable not defined
 ## Usage: [-s] question env_variable default_value
 ##    -s begining of allowing read opts
@@ -229,7 +263,11 @@ ask(){
         return
     fi
     echo -e -n "$question" >&2
-    read -r $readopts REPLY
+    if [ "$EASY_CA_QUIET" == "y" ] ; then
+        REPLY=""
+    else
+        read -r $readopts REPLY
+    fi
     if [ -n "${default}" ] && [ -z "${REPLY:-}" ]; then
         echo -e "$NOTE Using default: $default" >&2
         echo "$default"

@@ -100,8 +100,7 @@ echo -e "$NOTE Key is ${CSR_KEY:-"being created"}"
 
 ENABLE_ENGINE=
 if [[ -z "$CSR_KEY" ]]; then
-    echo -e -n "$INPUT Use PKCS11 Engine for this csr (key must be in \"PIV AUTH key\" or 9a)? [y/N]: "
-    read -r ENABLE_ENGINE
+    ENABLE_ENGINE=`ask_yes_no "Use PKCS11 Engine for this csr (key must be in \"PIV AUTH key\" or 9a)?" n`
     if [ "${ENABLE_ENGINE}" == "y" ] || [ "${ENABLE_ENGINE}" == "Y" ]; then
         ENABLE_ENGINE=1
         init_slot 9a "certs/$CSR_TYPE/$SAFE_NAME/$SAFE_NAME.pub" "pkcs11:object=PIV%20AUTH%20key"

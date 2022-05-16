@@ -22,6 +22,7 @@ usage() {
     echo "Issues a client certificate for CLIENT_NAME"
     echo
     echo "Options:"
+    echo "    -q              no prompt"
     echo "    -c CLIENT_NAME  Client name (commonName) for the new cert"
     echo
 }
@@ -33,8 +34,9 @@ fi
 
 CLIENT_NAME=
 
-while getopts c:h FLAG; do
+while getopts c:hq FLAG; do
     case $FLAG in
+        q) export EASY_CA_QUIET="y" ;;
         c) CLIENT_NAME=${OPTARG} ;;
         h) echo -e -n "$SUCC " && usage && exit 0 ;;
         *) echo -e -n "$ERR " && usage && exit 2 ;;

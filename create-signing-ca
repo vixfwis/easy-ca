@@ -99,8 +99,7 @@ if [[ -n $CA_ENABLE_ENGINE ]]; then
     LOOP=1
     while [[ -n $CA_PARENT_ENABLE_ENGINE ]] && [[ -n $LOOP ]]; do
         echo -e "$ERR WARNING: please make sure you have the proper pkcs11 device inserted. Do not have your root CA inserted." >&2
-        echo -e -n "$INPUT Are you SURE you wish to continue? [y/N]: " >&2
-        read -r SURE
+        SURE=`ask_yes_no "Are you SURE you wish to continue?" n`
         if [ "${SURE}" != "y" ] && [ "${SURE}" != "Y" ]; then
             echo -e "$ERR Exiting." >&2
             exit 1
@@ -160,8 +159,7 @@ pushd "${PARENT}" > /dev/null
 
 if [[ -n $CA_PARENT_ENABLE_ENGINE ]] && [[ -n $CA_ENABLE_ENGINE ]] ; then
     echo -e "$ERR WARNING: please make sure you have the proper pkcs11 device inserted. You are signing the sub-CA with the root CA device. Do not have your sub-CA device inserted."
-    echo -e -n "$INPUT Are you SURE you wish to continue? [y/N]: "
-    read -r SURE
+    SURE=`ask_yes_no "Are you SURE you wish to continue?" n`
     if [ "${SURE}" != "y" ] && [ "${SURE}" != "Y" ]; then
         echo -e "$ERR Exiting."
         exit 1
@@ -185,8 +183,7 @@ if [[ -n "$CA_ENABLE_ENGINE" ]]; then
     LOOP=1
     while [[ -n $CA_PARENT_ENABLE_ENGINE ]] && [[ -n $LOOP ]]; do
         echo -e "$ERR WARNING: please make sure you have the proper pkcs11 device inserted. Do not have your root CA inserted."
-        echo -e -n "$INPUT Are you SURE you wish to continue? [y/N]: "
-        read -r SURE
+        SURE=`ask_yes_no "Are you SURE you wish to continue?" n`
         if [ "${SURE}" != "y" ] && [ "${SURE}" != "Y" ]; then
             echo -e "$ERR Exiting."
             exit 1
